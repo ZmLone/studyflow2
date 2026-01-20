@@ -2791,14 +2791,28 @@ window.assignChapterTime = function(chapName, inputId) {
         setTimeout(() => toast.remove(), 3000);
     }
 };
- document.addEventListener('DOMContentLoaded', init);
+ 
+// --- APP STARTUP LOGIC (Fixed for Modules) ---
+function startApp() {
+    console.log("🚀 Starting App...");
+    
+    // 1. Run the Setup
+    init(); 
+    
+    // 2. Reveal the UI (Lift the curtain)
+    setTimeout(() => {
+        document.body.classList.add('loaded');
+    }, 50);
+}
 
-        // Optimization: FOUC listener - Triggered on DOMContentLoaded instead of Load for faster paint
-        document.addEventListener('DOMContentLoaded', () => {
-            // Small timeout to allow Tailwind CDN to parse initial classes
-            setTimeout(() => document.body.classList.add('loaded'), 50);
-        });
-
+// Check if the page is already ready (Common issue with modules)
+if (document.readyState === 'loading') {
+    // If still loading, wait for the event
+    document.addEventListener('DOMContentLoaded', startApp);
+} else {
+    // If already loaded, run immediately!
+    startApp();
+}
         // UTILITY: Debounce for search performance
         function debounce(func, wait) {
             let timeout;
