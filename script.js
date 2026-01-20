@@ -2071,136 +2071,79 @@ window.checkStudyPace = function() {
     const today = new Date(); 
     today.setHours(0,0,0,0);
 
-    // --- 1. DEFINE POINTS SYSTEM ---
-    const getWeight = (subject, topic) => {
-        if (subject === 'Physics') return 4;
-        if (subject === 'Botany') return 1;
-        if (subject === 'Zoology') return 1;
-        
-        if (subject === 'Chemistry') {
-            const t = topic.toLowerCase();
-            // Physical Chemistry (3 pts)
-            if (t.includes('thermo') || t.includes('equilibrium') || t.includes('kinetics') || 
-                t.includes('electro') || t.includes('solution') || t.includes('solid') || 
-                t.includes('state') || t.includes('atom') || t.includes('mole')) return 3;
-            
-            // Organic Chemistry (3 pts)
-            if (t.includes('organic') || t.includes('hydrocarbon') || t.includes('halo') || 
-                t.includes('alcohol') || t.includes('aldehyde') || t.includes('amine') || 
-                t.includes('bio') || t.includes('polymer')) return 3;
-
-            // Inorganic Chemistry (2 pts) - Default for others like Bonding, Block chem
-            return 2;
-        }
-        return 1; // Fallback
-    };
-
-    // --- 2. GENERATE MIX ---
+    // --- SCIENTIFIC ENGINE: Front-Loaded Greedy Algorithm ---
     function generateSmartMix(trackName, syllabusData, deadlineDate, colorTheme) {
         if (!deadlineDate) return null;
 
         const dDate = new Date(deadlineDate);
-        
-        // FIXED: Calculate raw days and exclude exam day for Main Track only
         let rawDays = Math.ceil((dDate - today) / (1000 * 60 * 60 * 24));
-        if (trackName === 'main') {
-            rawDays = rawDays > 0 ? rawDays - 1 : 0;
-        }
+        
+        // Safety: If it's the Main Exam, don't count the exam day itself
+        if (trackName === 'main') rawDays = rawDays > 0 ? rawDays - 1 : 0;
         const daysLeft = Math.max(1, rawDays);
 
-        // Organize buckets by specific type
-        const buckets = {
-            'Physics': [],
-            'Physical Chem': [],
-            'Organic Chem': [],
-            'Inorganic Chem': [],
-            'Botany': [],
-            'Zoology': []
-        };
-        
-        let totalPoints = 0;
-        let totalItems = 0;
+        // 1. GATHER & WEIGH TASKS
+        let allPending = [];
+        let totalRemainingPoints = 0;
 
         syllabusData.forEach(chapter => {
             chapter.dailyTests.forEach(dt => {
                 if (!state.dailyTestsAttempted[dt.name]) {
-                    const pts = getWeight(chapter.subject, chapter.topic);
-                    
-                    // Determine Bucket Key based on Points & Subject
-                    let key = chapter.subject;
-                    if (chapter.subject === 'Chemistry') {
-                        // FIXED: Added 'halo', 'alcohol', 'aldehyde' etc. to ensure they go to Organic, not Physical
-if (pts === 3 && (
-    chapter.topic.toLowerCase().includes('organic') || 
-    chapter.topic.toLowerCase().includes('hydro') || 
-    chapter.topic.toLowerCase().includes('halo') || 
-    chapter.topic.toLowerCase().includes('alcohol') ||
-    chapter.topic.toLowerCase().includes('aldehyde') ||
-    chapter.topic.toLowerCase().includes('amine')
-)) key = 'Organic Chem';
-                        else if (pts === 3) key = 'Physical Chem';
-                        else key = 'Inorganic Chem';
+                    // Scientific Weighting: Physics is 4x harder than Bio
+                    let pts = 1; // Default (Bot/Zoo)
+                    if (chapter.subject === 'Physics') pts = 4;
+                    else if (chapter.subject === 'Chemistry') {
+                        const t = chapter.topic.toLowerCase();
+                        // High-Yield/Organic Chem gets 3 pts
+                        if (t.includes('organic') || t.includes('hydro') || t.includes('halo') || 
+                            t.includes('alcohol') || t.includes('aldehyde') || t.includes('amine') || 
+                            t.includes('thermo') || t.includes('equilibrium') || t.includes('electro')) {
+                            pts = 3;
+                        } else {
+                            pts = 2; // Inorganic
+                        }
                     }
 
-                    const item = { 
-                        name: dt.name, 
-                        subject: chapter.subject, 
+                    allPending.push({
+                        name: dt.name,
+                        subject: chapter.subject,
                         topic: chapter.topic,
-                        points: pts 
-                    };
-
-                    if(buckets[key]) buckets[key].push(item);
-                    else buckets['Physics'].push(item); // Fallback
-                    
-                    totalPoints += pts;
-                    totalItems++;
+                        points: pts
+                    });
+                    totalRemainingPoints += pts;
                 }
             });
         });
 
-        if (totalItems === 0) return null;
+        if (allPending.length === 0) return null;
 
-        // Calculate Daily Target (Points per Day)
-        // FIXED: Added 5% "Panic Buffer" (Tighter Schedule)
-        const dailyTarget = Math.ceil((totalPoints / daysLeft) * 1.05);
-        // Round Robin Selection Logic
-        // Order: Phy -> Phys Chem -> Org Chem -> Inorg Chem -> Bot -> Zoo
-        const rotation = ['Physics', 'Physical Chem', 'Organic Chem', 'Inorganic Chem', 'Botany', 'Zoology'];
-        
+        // 2. THE GREEDY SORT (Eat the Frog)
+        // Sort by Points DESCENDING. You MUST do Physics/Hard Chem first.
+        allPending.sort((a, b) => b.points - a.points);
+
+        // 3. FRONT-LOADING CALCULATION
+        // Do 15% EXTRA work today to build a safety buffer for later.
+        // If < 5 days left (Panic Mode), increase to 25% extra.
+        const bufferMultiplier = daysLeft < 5 ? 1.25 : 1.15;
+        const dailyTargetPoints = Math.ceil((totalRemainingPoints / daysLeft) * bufferMultiplier);
+
+        // 4. SELECT BATCH
         let selectedBatch = [];
         let currentPoints = 0;
-        let safety = 0;
-        
-        while(currentPoints < dailyTarget && safety < totalItems) {
-            let added = false;
-            for (const type of rotation) {
-                if (currentPoints >= dailyTarget) break;
-                
-                if (buckets[type] && buckets[type].length > 0) {
-                    const task = buckets[type].shift(); // Take 1
-                    selectedBatch.push(task);
-                    currentPoints += task.points;
-                    added = true;
-                    safety++;
-                }
-            }
-            if (!added) break;
+
+        for (const task of allPending) {
+            if (currentPoints >= dailyTargetPoints) break;
+            selectedBatch.push(task);
+            currentPoints += task.points;
         }
 
-        currentAiSuggestions[trackName] = selectedBatch;
-
-        // Check if Planned
+        // 5. CHECK PLANNED STATUS
         const k = formatDateKey(state.selectedDate);
         const currentTasks = state.tasks[k] || [];
-        // FIXED AI LOGIC: Checks if the actual sub-topics are in your list
         const isPlanned = selectedBatch.every(item => {
-            // Find the full test data to get sub-topics
             const chapter = syllabusData.find(c => c.topic === item.topic);
             const testData = chapter?.dailyTests.find(dt => dt.name === item.name);
-            
             if (!testData) return false;
-
-            // Check if ANY sub-topic from this test is already in your tasks
             return testData.subs.some(sub => {
                 const taskText = `Study: ${item.topic} - ${sub}`;
                 return currentTasks.some(t => t.text === taskText);
@@ -2209,38 +2152,26 @@ if (pts === 3 && (
 
         if (isPlanned) return null;
 
+        // 6. GENERATE PREVIEW STATS
+        const previewMap = selectedBatch.reduce((acc, item) => {
+            let n = item.subject.substring(0,3); // Phy, Che, Bot...
+            if(item.subject === 'Chemistry') n = item.points >= 3 ? 'Org/Phys' : 'Inorg';
+            acc[n] = (acc[n] || 0) + 1;
+            return acc;
+        }, {});
+
         return {
-            name: trackName === 'main' ? 'Exam Smart Mix' : 'Backlog Strategy',
+            name: trackName === 'main' ? 'Front-Loaded Mix' : 'Rapid Recovery',
             days: daysLeft,
             dailyCount: selectedBatch.length,
             points: currentPoints,
             color: colorTheme,
             trackId: trackName,
-            // Generate Preview Text (e.g., "Phy: 1, Org: 1")
-            preview: selectedBatch.reduce((acc, item) => {
-                let n = item.subject;
-                if(n === 'Physics') n = 'Phy';
-                if(n === 'Botany') n = 'Bot';
-                if(n === 'Zoology') n = 'Zoo';
-                if(n === 'Chemistry') {
-// FIXED CODE: Matches the bucket logic
-if(item.points === 3 && (
-    item.topic.toLowerCase().includes('organic') || 
-    item.topic.toLowerCase().includes('hydro') || 
-    item.topic.toLowerCase().includes('halo') ||
-    item.topic.toLowerCase().includes('alcohol') ||
-    item.topic.toLowerCase().includes('aldehyde') ||
-    item.topic.toLowerCase().includes('amine')
-)) n = 'Org';
-else if(item.points === 3) n = 'Phys';                    
-                    else n = 'Inorg';
-                }
-                acc[n] = (acc[n] || 0) + 1;
-                return acc;
-            }, {})
+            preview: previewMap
         };
     }
 
+    // --- RENDER UI ---
     const mainStats = generateSmartMix('main', state.nextExam.syllabus, state.nextExam.date, 'violet');
     const backlogStats = generateSmartMix('backlog', backlogPlan.syllabus, backlogPlan.date, 'orange');
 
@@ -2264,13 +2195,13 @@ else if(item.points === 3) n = 'Phys';
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isV ? 'bg-violet-100 dark:bg-violet-900' : 'bg-orange-100 dark:bg-orange-900'} ${textMain} tracking-wide flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> ${stats.name}</span>
                         <span class="text-xs font-bold text-slate-400">${stats.days} Days Left</span>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-800 dark:text-white">Today's Load: <span class="${textMain}">${stats.points} Points</span> (${stats.dailyCount} Tests)</h3>
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-white">Scientific Load: <span class="${textMain}">${stats.points} Points</span> (${stats.dailyCount} Tests)</h3>
                     <div class="flex items-center gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-${stats.color}-100 dark:border-${stats.color}-900/30 w-fit">
-                        <i data-lucide="layers" class="w-3 h-3"></i><span>Mix: ${mixText}</span>
+                        <i data-lucide="layers" class="w-3 h-3"></i><span>${mixText}</span>
                     </div>
                 </div>
                 <button onclick="acceptAiPlan('${stats.trackId}')" class="w-full md:w-auto px-6 py-3 ${btnBg} text-white rounded-xl text-sm font-bold shadow-lg shadow-${stats.color}-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Smart Mix
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Accept Mission
                 </button>
             </div>
         </div>`;
@@ -2282,7 +2213,6 @@ else if(item.points === 3) n = 'Phys';
     container.innerHTML = html;
     if (window.lucide) lucide.createIcons({ root: container });
 };
-
 
 window.acceptAiPlan = function(track) {
     const suggestions = currentAiSuggestions[track];
