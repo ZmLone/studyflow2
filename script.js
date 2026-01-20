@@ -3509,4 +3509,6 @@ if (document.readyState === 'loading') {
     // If already loaded, run immediately!
     startApp();
 }
-// END OF FILE - NO EXTRA BRACKETS BELOW THIS LINE
+window.addEventListener("DOMContentLoaded", () => {
+  document.body.classList.add("loaded");
+});
