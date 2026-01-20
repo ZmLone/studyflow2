@@ -2772,12 +2772,17 @@ function renderStats() {
             if(elements.sylTitle) elements.sylTitle.textContent = state.nextExam.name + " Syllabus";
             if(elements.sylDate) elements.sylDate.textContent = formattedDate;
             if(elements.sylDays) elements.sylDays.textContent = `${diff} Days Left`;
+const blDate = new Date(backlogPlan.date); blDate.setHours(0,0,0,0);
 
-            const blDate = new Date(backlogPlan.date); blDate.setHours(0,0,0,0);
-            const blDiff = Math.ceil((blDate - today)/(1000*60*60*24));
-            if(elements.blDays) elements.blDays.textContent = `${blDiff} Days Left`;
-            if(elements.blLarge) elements.blLarge.textContent = blDiff;
+// FIX: Calculate raw difference first
+let rawBlDiff = Math.ceil((blDate - today)/(1000*60*60*24));
 
+// FIX: Subtract 1 day so it shows "Study Days Left" (excluding the deadline day)
+const blDiff = rawBlDiff > 0 ? rawBlDiff - 1 : rawBlDiff;
+
+if(elements.blDays) elements.blDays.textContent = `${blDiff} Days Left`;
+if(elements.blLarge) elements.blLarge.textContent = blDiff;
+            
             // Global Progress Calculation
             const allCompleted = new Set(Object.values(state.tasks).flat().filter(t => t.completed).map(t => t.text));
             
