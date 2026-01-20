@@ -836,59 +836,31 @@ const mainSchedule = [
    }
 ];
 
-
-
-
 const backlogPlan = {
-   name: "AIATS-5 (Backlog)",
-   date: new Date('2026-02-08T00:00:00'),
+   name: "Backlog & Revision", // Renamed to reflect mixed content
+   date: new Date('2026-02-01T00:00:00'), // Your Target Date (Feb 1)
    syllabus: [
-       // --- PHYSICS ---
-       {
-           subject: "Physics",
-           topic: "Electrostatics",
-           dailyTests: [
-               {name:"DT-1 (Phy-XII)", subs:["Electric Charges, Induction"]},
-               {name:"DT-2 (Phy-XII)", subs:["Coulomb's Law"]},
-               {name:"DT-3 (Phy-XII)", subs:["Electric Field"]},
-               {name:"DT-4 (Phy-XII)", subs:["Field Lines, Dipole"]},
-               {name:"DT-5 (Phy-XII)", subs:["Gauss's Law"]},
-               {name:"DT-6 (Phy-XII)", subs:["Potential"]},
-               {name:"DT-7 (Phy-XII)", subs:["Equipotential Surfaces"]},
-               {name:"DT-8 (Phy-XII)", subs:["Conductors"]},
-               {name:"DT-9 (Phy-XII)", subs:["Capacitors"]},
-               {name:"DT-10 (Phy-XII)", subs:["Combinations"]}
-           ]
-       },
-       {
-           subject: "Physics",
-           topic: "Current Electricity",
-           dailyTests: [
-               {name:"DT-11 (Phy-XII)", subs:["Ohm's Law"]},
-               {name:"DT-12 (Phy-XII)", subs:["Resistors"]},
-               {name:"DT-13 (Phy-XII)", subs:["Cells, EMF"]},
-               {name:"DT-14 (Phy-XII)", subs:["Kirchhoff's Laws"]},
-               {name:"DT-15 (Phy-XII)", subs:["Instruments"]}
-           ]
-       },
+       // =========================================
+       // PART 1: AIATS-5 PENDING (Chem/Bio Only)
+       // =========================================
 
-       // --- CHEMISTRY ---
+       // --- CHEMISTRY (AIATS-5) ---
        {
            subject: "Chemistry",
            topic: "Hydrocarbons (XI)",
            dailyTests: [
-               {name:"DT-28 (Chem-XI)", subs:["Alkanes"]},
-               {name:"DT-29 (Chem-XI)", subs:["Alkenes"]},
-               {name:"DT-30 (Chem-XI)", subs:["Alkynes & Aromatic"]}
+               {name:"DT-28 (Chem-XI)", subs:["Alkanes: Prep & Properties"]},
+               {name:"DT-29 (Chem-XI)", subs:["Alkenes: Prep & Properties"]},
+               {name:"DT-30 (Chem-XI)", subs:["Alkynes", "Aromatic Hydrocarbons"]}
            ]
        },
        {
            subject: "Chemistry",
            topic: "Haloalkanes & Haloarenes",
            dailyTests: [
-               {name:"DT-16 (Chem-XII)", subs:["Haloalkanes"]},
-               {name:"DT-17 (Chem-XII)", subs:["SN1/SN2"]},
-               {name:"DT-18 (Chem-XII)", subs:["Elimination"]},
+               {name:"DT-16 (Chem-XII)", subs:["Haloalkanes: Prep", "Physical Properties"]},
+               {name:"DT-17 (Chem-XII)", subs:["SN1 Mechanism", "SN2 Mechanism"]},
+               {name:"DT-18 (Chem-XII)", subs:["Elimination Reactions", "Reaction with Metals"]},
                {name:"DT-19 (Chem-XII)", subs:["Haloarenes"]}
            ]
        },
@@ -896,67 +868,94 @@ const backlogPlan = {
            subject: "Chemistry",
            topic: "Alcohols, Phenols & Ethers",
            dailyTests: [
-               {name:"DT-20 (Chem-XII)", subs:["Alcohols"]},
-               {name:"DT-21 (Chem-XII)", subs:["Phenols"]},
-               {name:"DT-22 (Chem-XII)", subs:["Ethers"]}
+               {name:"DT-20 (Chem-XII)", subs:["Alcohols Prep", "Nomenclature"]},
+               {name:"DT-21 (Chem-XII)", subs:["Phenols Prep", "Phenols Reactions"]},
+               {name:"DT-22 (Chem-XII)", subs:["Ethers Prep", "Ethers Properties"]}
            ]
        },
        {
            subject: "Chemistry",
-           topic: "Aldehydes & Ketones",
+           topic: "Aldehydes, Ketones & Carboxylic",
            dailyTests: [
-               {name:"DT-23 (Chem-XII)", subs:["Prep & Reactions"]},
-               {name:"DT-24 (Chem-XII)", subs:["Carboxylic Acids"]}
+               {name:"DT-23 (Chem-XII)", subs:["Aldehydes Prep", "Ketones Prep", "Nucleophilic Addition"]},
+               {name:"DT-24 (Chem-XII)", subs:["Carboxylic Acids", "Aldehyde Oxidation"]}
            ]
        },
 
-       // --- BOTANY ---
+       // --- BOTANY (AIATS-5) ---
        {
            subject: "Botany",
-           topic: "Sexual Repro in Flowering Plants",
+           topic: "Sexual Reproduction in Plants",
            dailyTests: [
-               {name:"DT-1 (Bot-XII)", subs:["Flower"]},
-               {name:"DT-2 (Bot-XII)", subs:["Megasporangium"]},
+               {name:"DT-1 (Bot-XII)", subs:["Flower Structure", "Microsporogenesis"]},
+               {name:"DT-2 (Bot-XII)", subs:["Pistil", "Megasporangium (Ovule)"]},
                {name:"DT-3 (Bot-XII)", subs:["Pollination"]},
-               {name:"DT-4 (Bot-XII)", subs:["Fertilization"]},
-               {name:"DT-5 (Bot-XII)", subs:["Seed/Fruit"]}
+               {name:"DT-4 (Bot-XII)", subs:["Outbreeding Devices", "Double Fertilization"]},
+               {name:"DT-5 (Bot-XII)", subs:["Seed", "Fruit", "Apomixis"]}
            ]
        },
        {
            subject: "Botany",
            topic: "Principles of Inheritance",
            dailyTests: [
-               {name:"DT-6 (Bot-XII)", subs:["Mendel's Laws"]},
-               {name:"DT-7 (Bot-XII)", subs:["Epistasis"]},
-               {name:"DT-8 (Bot-XII)", subs:["Linkage"]},
-               {name:"DT-9 (Bot-XII)", subs:["Disorders"]}
+               {name:"DT-6 (Bot-XII)", subs:["Mendelian Genetics", "Incomplete Dominance"]},
+               {name:"DT-7 (Bot-XII)", subs:["Co-dominance", "Epistasis"]},
+               {name:"DT-8 (Bot-XII)", subs:["Linkage", "Mutation"]},
+               {name:"DT-9 (Bot-XII)", subs:["Genetic Disorders", "Pedigree Analysis"]}
            ]
        },
 
-       // --- ZOOLOGY ---
+       // --- ZOOLOGY (AIATS-5) ---
        {
            subject: "Zoology",
            topic: "Human Reproduction",
            dailyTests: [
-               {name:"DT-1 (Zoo-XII)", subs:["Male System"]},
-               {name:"DT-2 (Zoo-XII)", subs:["Female System"]},
+               {name:"DT-1 (Zoo-XII)", subs:["Male Reproductive System"]},
+               {name:"DT-2 (Zoo-XII)", subs:["Female Reproductive System"]},
                {name:"DT-3 (Zoo-XII)", subs:["Spermatogenesis"]},
                {name:"DT-4 (Zoo-XII)", subs:["Oogenesis"]},
                {name:"DT-5 (Zoo-XII)", subs:["Menstrual Cycle"]},
-               {name:"DT-6 (Zoo-XII)", subs:["Pregnancy"]}
+               {name:"DT-6 (Zoo-XII)", subs:["Pregnancy", "Parturition"]}
            ]
        },
        {
            subject: "Zoology",
            topic: "Reproductive Health",
            dailyTests: [
-               {name:"DT-7 (Zoo-XII)", subs:["Population"]},
-               {name:"DT-8 (Zoo-XII)", subs:["Contraception"]},
-               {name:"DT-9 (Zoo-XII)", subs:["STIs/ART"]}
+               {name:"DT-7 (Zoo-XII)", subs:["Population Stabilization"]},
+               {name:"DT-8 (Zoo-XII)", subs:["Contraception Methods"]},
+               {name:"DT-9 (Zoo-XII)", subs:["Infertility", "STIs", "ART"]}
            ]
+       },
+
+       // =========================================
+       // PART 2: CLASS 11 REVISION (New Section)
+       // =========================================
+
+       { 
+           subject: "Physics", 
+           topic: "Wave Motion (Class 11)", 
+           dailyTests: [
+               {name:"DT-49 (Phy-XI)", subs:["Transverse Waves", "Longitudinal Waves"]},
+               {name:"DT-50 (Phy-XI)", subs:["Speed of Travelling Wave"]},
+               {name:"DT-51 (Phy-XI)", subs:["Superposition Principle", "Reflection of Waves", "Beats"]}
+           ] 
+       },
+       { 
+           subject: "Chemistry", 
+           topic: "GOC: General Organic Chem", 
+           dailyTests: [
+               {name:"DT-23 (Chem-XI)", subs:["IUPAC Nomenclature"]},
+               {name:"DT-24 (Chem-XI)", subs:["Isomerism", "Nucleophiles & Electrophiles"]},
+               {name:"DT-25 (Chem-XI)", subs:["Inductive Effect", "Resonance", "Hyperconjugation"]},
+               {name:"DT-26 (Chem-XI)", subs:["Carbocation", "Carbanion", "Free Radicals"]},
+               {name:"DT-27 (Chem-XI)", subs:["Purification Methods", "Qualitative Analysis"]}
+           ] 
        }
    ]
 };
+
+
 
         // --- STATE MODIFICATION: USE REAL DATE ---
         const state = {
