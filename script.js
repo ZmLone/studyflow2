@@ -2070,7 +2070,7 @@ window.renderLeaderboardList = function() {
 
 let currentAiSuggestions = { main: [], backlog: [] };
 
-// --- FIXED SMART MIX ENGINE ---
+// --- INTELLIGENT GAP-FILLING SMART MIX ---
 window.checkStudyPace = function() {
     const container = document.getElementById('ai-strategy-container');
     if (!container) return;
@@ -2080,91 +2080,105 @@ window.checkStudyPace = function() {
 
     const today = new Date(); 
     today.setHours(0,0,0,0);
+    const k = formatDateKey(state.selectedDate);
+    const todaysTasks = state.tasks[k] || [];
 
-    // --- SCIENTIFIC ENGINE: Front-Loaded Greedy Algorithm ---
+    // HELPER: Calculate Weight of any Subject/Topic
+    function getWeight(subject, topic) {
+        if (subject === 'Physics') return 4;
+        if (subject === 'Chemistry') {
+            const t = (topic || '').toLowerCase();
+            if (t.includes('organic') || t.includes('hydro') || t.includes('halo') || 
+                t.includes('alcohol') || t.includes('aldehyde') || t.includes('amine') || 
+                t.includes('thermo') || t.includes('equilibrium') || t.includes('electro')) {
+                return 3;
+            }
+            return 2;
+        }
+        return 1; // Botany/Zoology
+    }
+
+    // --- ENGINE: The "Gap Filler" Algorithm ---
     function generateSmartMix(trackName, syllabusData, deadlineDate, colorTheme) {
         if (!deadlineDate) return null;
 
         const dDate = new Date(deadlineDate);
         let rawDays = Math.ceil((dDate - today) / (1000 * 60 * 60 * 24));
-        
-        // Safety: If it's the Main Exam, don't count the exam day itself
         if (trackName === 'main') rawDays = rawDays > 0 ? rawDays - 1 : 0;
         const daysLeft = Math.max(1, rawDays);
 
-        // 1. GATHER & WEIGH TASKS
+        // 1. CALCULATE TOTAL REMAINING WORK (Backlog + Future)
         let allPending = [];
         let totalRemainingPoints = 0;
 
         syllabusData.forEach(chapter => {
             chapter.dailyTests.forEach(dt => {
+                // Only include if NOT done 
                 if (!state.dailyTestsAttempted[dt.name]) {
-                    // Scientific Weighting: Physics is 4x harder than Bio
-                    let pts = 1; // Default (Bot/Zoo)
-                    if (chapter.subject === 'Physics') pts = 4;
-                    else if (chapter.subject === 'Chemistry') {
-                        const t = chapter.topic.toLowerCase();
-                        // High-Yield/Organic Chem gets 3 pts
-                        if (t.includes('organic') || t.includes('hydro') || t.includes('halo') || 
-                            t.includes('alcohol') || t.includes('aldehyde') || t.includes('amine') || 
-                            t.includes('thermo') || t.includes('equilibrium') || t.includes('electro')) {
-                            pts = 3;
-                        } else {
-                            pts = 2; // Inorganic
-                        }
-                    }
+                    const pts = getWeight(chapter.subject, chapter.topic);
+                    
+                    // CHECK: Is this specific sub-task ALREADY in today's planner?
+                    // We check if ANY sub-topic of this test is planned
+                    const isAlreadyPlanned = dt.subs.some(sub => 
+                        todaysTasks.some(t => t.text === `Study: ${chapter.topic} - ${sub}`)
+                    );
 
-                    allPending.push({
-                        name: dt.name,
-                        subject: chapter.subject,
-                        topic: chapter.topic,
-                        points: pts
-                    });
-                    totalRemainingPoints += pts;
+                    if (!isAlreadyPlanned) {
+                        allPending.push({
+                            name: dt.name,
+                            subject: chapter.subject,
+                            topic: chapter.topic,
+                            points: pts
+                        });
+                        totalRemainingPoints += pts;
+                    }
                 }
             });
         });
 
-        if (allPending.length === 0) return null;
+        if (allPending.length === 0) return null; // Nothing left!
 
-        // 2. THE GREEDY SORT (Eat the Frog)
-        allPending.sort((a, b) => b.points - a.points);
+        // 2. CALCULATE "ALREADY PLANNED" SCORE
+        // This is the "Intelligence" part. We sum up points of tasks you manually added.
+        let manualPoints = 0;
+        todaysTasks.forEach(t => {
+            // Only count tasks that match this track (Main vs Backlog)
+            if (t.type === trackName) {
+                // Try to infer weight from the text or subject
+                let subject = t.subject;
+                let topic = t.chapter || '';
+                if (!topic && t.text.includes(' - ')) topic = t.text.split(' - ')[0].replace('Study: ', '');
+                
+                manualPoints += getWeight(subject, topic);
+            }
+        });
 
-        // 3. FRONT-LOADING CALCULATION
+        // 3. CALCULATE THE GAP (Target - Manual)
         const bufferMultiplier = daysLeft < 5 ? 1.25 : 1.15;
-        const dailyTargetPoints = Math.ceil((totalRemainingPoints / daysLeft) * bufferMultiplier);
+        const rawDailyTarget = Math.ceil((totalRemainingPoints / daysLeft) * bufferMultiplier);
+        
+        // The Magic: Subtract what you've already done/planned
+        let neededPoints = rawDailyTarget - manualPoints;
 
-        // 4. SELECT BATCH
+        // If you've already planned MORE than the target, don't suggest anything!
+        if (neededPoints <= 0) return null; 
+
+        // 4. FILL THE GAP (Greedy Sort)
+        allPending.sort((a, b) => b.points - a.points); // Hardest first
+
         let selectedBatch = [];
         let currentPoints = 0;
 
         for (const task of allPending) {
-            if (currentPoints >= dailyTargetPoints) break;
+            if (currentPoints >= neededPoints) break;
             selectedBatch.push(task);
             currentPoints += task.points;
         }
 
-        // --- CRITICAL FIX: SAVE TO GLOBAL STORE ---
-        // This was missing! The button didn't know what to accept.
-        currentAiSuggestions[trackName] = selectedBatch; 
-        // ------------------------------------------
+        // Save for the button
+        currentAiSuggestions[trackName] = selectedBatch;
 
-        // 5. CHECK PLANNED STATUS (Hide if you already added them today)
-        const k = formatDateKey(state.selectedDate);
-        const currentTasks = state.tasks[k] || [];
-        const isPlanned = selectedBatch.every(item => {
-            const chapter = syllabusData.find(c => c.topic === item.topic);
-            const testData = chapter?.dailyTests.find(dt => dt.name === item.name);
-            if (!testData) return false;
-            return testData.subs.some(sub => {
-                const taskText = `Study: ${item.topic} - ${sub}`;
-                return currentTasks.some(t => t.text === taskText);
-            });
-        });
-
-        if (isPlanned) return null;
-
-        // 6. GENERATE PREVIEW STATS
+        // 5. GENERATE PREVIEW
         const previewMap = selectedBatch.reduce((acc, item) => {
             let n = item.subject.substring(0,3); 
             if(item.subject === 'Chemistry') n = item.points >= 3 ? 'Org/Phys' : 'Inorg';
@@ -2173,10 +2187,11 @@ window.checkStudyPace = function() {
         }, {});
 
         return {
-            name: trackName === 'main' ? 'Front-Loaded Mix' : 'Rapid Recovery',
+            name: trackName === 'main' ? 'Smart Gap Fill' : 'Backlog Gap Fill',
             days: daysLeft,
             dailyCount: selectedBatch.length,
             points: currentPoints,
+            manualPoints: manualPoints, // Pass this to show off intelligence
             color: colorTheme,
             trackId: trackName,
             preview: previewMap
@@ -2186,7 +2201,6 @@ window.checkStudyPace = function() {
     // --- RENDER UI ---
     let html = '';
     
-    // Render Function (Moved inside to access scope)
     const renderCard = (stats) => {
         const isV = stats.color === 'violet';
         const bg = isV ? 'bg-violet-50 dark:bg-violet-900/10' : 'bg-orange-50 dark:bg-orange-900/10';
@@ -2194,6 +2208,11 @@ window.checkStudyPace = function() {
         const textMain = isV ? 'text-violet-700 dark:text-violet-300' : 'text-orange-700 dark:text-orange-300';
         const btnBg = isV ? 'bg-violet-600 hover:bg-violet-700' : 'bg-orange-600 hover:bg-orange-700';
         const mixText = Object.entries(stats.preview).map(([k,v]) => `${k}: ${v}`).join(', ');
+
+        // Smart Message: "You planned X, we suggest Y more"
+        const smartMessage = stats.manualPoints > 0 
+            ? `<span class="text-[10px] font-bold opacity-70 block mt-1">(You planned ${stats.manualPoints} pts manually. Adding ${stats.points} more.)</span>` 
+            : '';
 
         return `
         <div class="${bg} border ${border} rounded-2xl p-5 relative overflow-hidden group shadow-sm mb-4 animate-in slide-in-from-top-2 duration-500">
@@ -2204,7 +2223,10 @@ window.checkStudyPace = function() {
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isV ? 'bg-violet-100 dark:bg-violet-900' : 'bg-orange-100 dark:bg-orange-900'} ${textMain} tracking-wide flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> ${stats.name}</span>
                         <span class="text-xs font-bold text-slate-400">${stats.days} Days Left</span>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-800 dark:text-white">Scientific Load: <span class="${textMain}">${stats.points} Points</span> (${stats.dailyCount} Tests)</h3>
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-white">
+                        Recommended: <span class="${textMain}">${stats.points} Points</span>
+                        ${smartMessage}
+                    </h3>
                     <div class="flex items-center gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-${stats.color}-100 dark:border-${stats.color}-900/30 w-fit">
                         <i data-lucide="layers" class="w-3 h-3"></i><span>${mixText}</span>
                     </div>
@@ -2229,6 +2251,9 @@ window.checkStudyPace = function() {
     container.innerHTML = html;
     if (window.lucide) lucide.createIcons({ root: container });
 };
+
+
+
 window.acceptAiPlan = function(track) {
     const suggestions = currentAiSuggestions[track];
     if (!suggestions || suggestions.length === 0) return;
