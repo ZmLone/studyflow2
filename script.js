@@ -3510,6 +3510,3 @@ if (document.readyState === 'loading') {
     // If already loaded, run immediately!
     startApp();
 }
-window.addEventListener("DOMContentLoaded", () => {
-  document.body.classList.add("loaded");
-});
