@@ -8,6 +8,7 @@ body {
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     /* Base transitions */
+transform: translateZ(0);
     transition: background-color 0.4s ease, color 0.4s ease;
 }
 
@@ -102,4 +103,5 @@ body.loaded { visibility: visible; opacity: 1; }
 .resize-animation-stopper * {
     animation: none !important;
     transition: none !important;
+transform: none !important; /* Forces elements to stop moving */
 }

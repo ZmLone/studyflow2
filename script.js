@@ -2777,27 +2777,33 @@ function renderStats() {
     if(elements.sylDate) elements.sylDate.textContent = formattedDate;
     if(elements.sylDays) elements.sylDays.textContent = `${diff} Days Left`;
 
-    // --- 2. Backlog Countdown (FIXED LOGIC) ---
-    const blDate = new Date(backlogPlan.date); blDate.setHours(0,0,0,0);
-    
-    // Step A: Calculate raw difference
-    let rawBlDiff = Math.ceil((blDate - today)/(1000*60*60*24));
-    
-    // Step B: SUBTRACT 1 (This was missing in your file!)
-    const blDiff = rawBlDiff > 0 ? rawBlDiff - 1 : rawBlDiff;
+    // --- 2. Backlog Countdown (FIXED LOGIC HERE) ---
+    // Ensure 'backlogPlan' is defined
+    if(typeof backlogPlan !== 'undefined') {
+        const blDate = new Date(backlogPlan.date); blDate.setHours(0,0,0,0);
+        
+        // Step A: Calculate raw difference
+        let rawBlDiff = Math.ceil((blDate - today)/(1000*60*60*24));
+        
+        // Step B: SUBTRACT 1 (This was missing in your file!)
+        // If 11 days remain, this will now show 10.
+        const blDiff = rawBlDiff > 0 ? rawBlDiff - 1 : rawBlDiff;
 
-    if(elements.blDays) elements.blDays.textContent = `${blDiff} Days Left`;
-    if(elements.blLarge) elements.blLarge.textContent = blDiff;
+        if(elements.blDays) elements.blDays.textContent = `${blDiff} Days Left`;
+        if(elements.blLarge) elements.blLarge.textContent = blDiff;
+    }
 
-    // --- 3. Progress Bars (No changes needed here) ---
+    // --- 3. Progress Bars ---
     const allCompleted = new Set(Object.values(state.tasks).flat().filter(t => t.completed).map(t => t.text));
     
     // Main Syllabus Progress
     let mainTotal = 0, mainDone = 0;
-    state.nextExam.syllabus.forEach(s => s.dailyTests.forEach(dt => dt.subs.forEach(sub => {
-        mainTotal++;
-        if(allCompleted.has(`Study: ${s.topic} - ${sub}`)) mainDone++;
-    })));
+    if(state.nextExam && state.nextExam.syllabus) {
+        state.nextExam.syllabus.forEach(s => s.dailyTests.forEach(dt => dt.subs.forEach(sub => {
+            mainTotal++;
+            if(allCompleted.has(`Study: ${s.topic} - ${sub}`)) mainDone++;
+        })));
+    }
     const mainPct = mainTotal ? Math.round((mainDone/mainTotal)*100) : 0;
     const mainBar = document.getElementById('card-main-bar');
     if(mainBar) mainBar.style.width = `${mainPct}%`;
@@ -2806,10 +2812,12 @@ function renderStats() {
 
     // Backlog Progress
     let blTotal = 0, blDone = 0;
-    backlogPlan.syllabus.forEach(s => s.dailyTests.forEach(dt => dt.subs.forEach(sub => {
-        blTotal++;
-        if(allCompleted.has(`Study: ${s.topic} - ${sub}`)) blDone++;
-    })));
+    if(typeof backlogPlan !== 'undefined') {
+        backlogPlan.syllabus.forEach(s => s.dailyTests.forEach(dt => dt.subs.forEach(sub => {
+            blTotal++;
+            if(allCompleted.has(`Study: ${s.topic} - ${sub}`)) blDone++;
+        })));
+    }
     const blPct = blTotal ? Math.round((blDone/blTotal)*100) : 0;
     const blBar = document.getElementById('card-backlog-bar');
     if(blBar) blBar.style.width = `${blPct}%`;
@@ -2833,20 +2841,9 @@ function renderStats() {
     if (totalFiltered > 0 && dayPct === 100 && !state.goalCompletedToday) {
         state.goalCompletedToday = true; 
         try {
-            var count = 200;
-            var defaults = { origin: { y: 0.7 } };
-            function fire(particleRatio, opts) {
-                if (window.confetti) {
-                    confetti(Object.assign({}, defaults, opts, {
-                        particleCount: Math.floor(count * particleRatio)
-                    }));
-                }
+            if (window.confetti) {
+                confetti({ particleCount: 200, spread: 60, origin: { y: 0.7 } });
             }
-            fire(0.25, { spread: 26, startVelocity: 55, });
-            fire(0.2, { spread: 60, });
-            fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
-            fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
-            fire(0.1, { spread: 120, startVelocity: 45, });
             successSound.currentTime = 0;
             successSound.play().catch(e => console.log("Audio play failed"));
         } catch(e) { console.log("Effects failed", e); }
@@ -2854,19 +2851,9 @@ function renderStats() {
         state.goalCompletedToday = false;
     }
 
-    // Gradient Bar
-    let completedExamCount = filteredTasks.filter(t => t.completed && t.type === 'main').length;
-    let completedBacklogCount = filteredTasks.filter(t => t.completed && t.type === 'backlog').length;
-    let gradientStyle = `bg-brand-500`; 
+    // Sidebar Bars
+    const gradientStyle = completedFiltered > 0 ? `background-color: #0ea5e9` : `background-color: #0ea5e9`; 
     
-    if (completedFiltered > 0) {
-        const totalScored = completedExamCount + completedBacklogCount;
-        if (totalScored > 0) {
-            const examShare = (completedExamCount / totalScored) * 100;
-            gradientStyle = `background: linear-gradient(90deg, #0ea5e9 0%, #0ea5e9 ${examShare}%, #f97316 ${examShare}%, #f97316 100%)`;
-        } else { gradientStyle = `background-color: #0ea5e9`; }
-    } else { gradientStyle = `background-color: #0ea5e9`; }
-
     const sideBar = document.getElementById('sidebar-progress-bar');
     if(sideBar) {
         sideBar.style = `width: ${dayPct}%; ${gradientStyle}`;
@@ -2886,6 +2873,7 @@ function renderStats() {
     const footerLabel = document.getElementById('footer-goal-label');
     if(footerLabel) footerLabel.textContent = selectedSubject === 'General' ? 'Daily Goal' : `${selectedSubject} Goal`;
 }
+
 
  function createTaskElementHTML(t, isSubTask = false) {
             // Updated Styles for "Pill" look
