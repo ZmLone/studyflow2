@@ -2746,151 +2746,146 @@ window.renderTasks = renderTasks;
             if(els.agendaDate) els.agendaDate.textContent = dateStr;
         }
 function renderStats() {
-            const today = new Date(); today.setHours(0,0,0,0);
-            const exDate = new Date(state.nextExam.date); exDate.setHours(0,0,0,0);
-            
-            // FIXED: Exclude exam day from prep days for visual count
-            let rawDiff = Math.ceil((exDate - today)/(1000*60*60*24));
-            const diff = rawDiff > 0 ? rawDiff - 1 : rawDiff;
-                    const formattedDate = state.nextExam.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            
-            // Text Updates
-            const elements = {
-                name: document.getElementById('card-main-name'),
-                date: document.getElementById('card-main-date-info'),
-                days: document.getElementById('card-main-days'),
-                sylTitle: document.getElementById('syllabus-title'),
-                sylDate: document.getElementById('syllabus-date'),
-                sylDays: document.getElementById('syllabus-days-left'),
-                blDays: document.getElementById('backlog-days-left'),
-                blLarge: document.getElementById('backlog-days-large')
-            };
+    const today = new Date(); today.setHours(0,0,0,0);
+    
+    // --- 1. Main Exam Countdown ---
+    const exDate = new Date(state.nextExam.date); exDate.setHours(0,0,0,0);
+    
+    // Calculate raw difference
+    let rawDiff = Math.ceil((exDate - today)/(1000*60*60*24));
+    // Subtract 1 day so it shows "Days Remaining" (not including exam day)
+    const diff = rawDiff > 0 ? rawDiff - 1 : rawDiff;
+    
+    const formattedDate = state.nextExam.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    
+    // Update Main Exam UI
+    const elements = {
+        name: document.getElementById('card-main-name'),
+        date: document.getElementById('card-main-date-info'),
+        days: document.getElementById('card-main-days'),
+        sylTitle: document.getElementById('syllabus-title'),
+        sylDate: document.getElementById('syllabus-date'),
+        sylDays: document.getElementById('syllabus-days-left'),
+        blDays: document.getElementById('backlog-days-left'),
+        blLarge: document.getElementById('backlog-days-large')
+    };
 
-            if(elements.name) elements.name.textContent = state.nextExam.name;
-            if(elements.date) elements.date.textContent = `Exam Date: ${formattedDate}`;
-            if(elements.days) elements.days.textContent = diff; // Allow negatives to show passed
-            if(elements.sylTitle) elements.sylTitle.textContent = state.nextExam.name + " Syllabus";
-            if(elements.sylDate) elements.sylDate.textContent = formattedDate;
-            if(elements.sylDays) elements.sylDays.textContent = `${diff} Days Left`;
-const blDate = new Date(backlogPlan.date); blDate.setHours(0,0,0,0);
+    if(elements.name) elements.name.textContent = state.nextExam.name;
+    if(elements.date) elements.date.textContent = `Exam Date: ${formattedDate}`;
+    if(elements.days) elements.days.textContent = diff; 
+    if(elements.sylTitle) elements.sylTitle.textContent = state.nextExam.name + " Syllabus";
+    if(elements.sylDate) elements.sylDate.textContent = formattedDate;
+    if(elements.sylDays) elements.sylDays.textContent = `${diff} Days Left`;
 
-// FIX: Calculate raw difference first
-let rawBlDiff = Math.ceil((blDate - today)/(1000*60*60*24));
+    // --- 2. Backlog Countdown (FIXED LOGIC) ---
+    const blDate = new Date(backlogPlan.date); blDate.setHours(0,0,0,0);
+    
+    // Step A: Calculate raw difference
+    let rawBlDiff = Math.ceil((blDate - today)/(1000*60*60*24));
+    
+    // Step B: SUBTRACT 1 (This was missing in your file!)
+    const blDiff = rawBlDiff > 0 ? rawBlDiff - 1 : rawBlDiff;
 
-// FIX: Subtract 1 day so it shows "Study Days Left" (excluding the deadline day)
-const blDiff = rawBlDiff > 0 ? rawBlDiff - 1 : rawBlDiff;
+    if(elements.blDays) elements.blDays.textContent = `${blDiff} Days Left`;
+    if(elements.blLarge) elements.blLarge.textContent = blDiff;
 
-if(elements.blDays) elements.blDays.textContent = `${blDiff} Days Left`;
-if(elements.blLarge) elements.blLarge.textContent = blDiff;
-            
-            // Global Progress Calculation
-            const allCompleted = new Set(Object.values(state.tasks).flat().filter(t => t.completed).map(t => t.text));
-            
-            // Main Syllabus Progress
-            let mainTotal = 0, mainDone = 0;
-            state.nextExam.syllabus.forEach(s => s.dailyTests.forEach(dt => dt.subs.forEach(sub => {
-                mainTotal++;
-                if(allCompleted.has(`Study: ${s.topic} - ${sub}`)) mainDone++;
-            })));
-            const mainPct = mainTotal ? Math.round((mainDone/mainTotal)*100) : 0;
-            const mainBar = document.getElementById('card-main-bar');
-            if(mainBar) mainBar.style.width = `${mainPct}%`;
-            const mainText = document.getElementById('card-main-text');
-            if(mainText) mainText.textContent = `${mainPct}%`;
+    // --- 3. Progress Bars (No changes needed here) ---
+    const allCompleted = new Set(Object.values(state.tasks).flat().filter(t => t.completed).map(t => t.text));
+    
+    // Main Syllabus Progress
+    let mainTotal = 0, mainDone = 0;
+    state.nextExam.syllabus.forEach(s => s.dailyTests.forEach(dt => dt.subs.forEach(sub => {
+        mainTotal++;
+        if(allCompleted.has(`Study: ${s.topic} - ${sub}`)) mainDone++;
+    })));
+    const mainPct = mainTotal ? Math.round((mainDone/mainTotal)*100) : 0;
+    const mainBar = document.getElementById('card-main-bar');
+    if(mainBar) mainBar.style.width = `${mainPct}%`;
+    const mainText = document.getElementById('card-main-text');
+    if(mainText) mainText.textContent = `${mainPct}%`;
 
-            // Backlog Progress
-            let blTotal = 0, blDone = 0;
-            backlogPlan.syllabus.forEach(s => s.dailyTests.forEach(dt => dt.subs.forEach(sub => {
-                blTotal++;
-                if(allCompleted.has(`Study: ${s.topic} - ${sub}`)) blDone++;
-            })));
-            const blPct = blTotal ? Math.round((blDone/blTotal)*100) : 0;
-            const blBar = document.getElementById('card-backlog-bar');
-            if(blBar) blBar.style.width = `${blPct}%`;
-            const blText = document.getElementById('card-backlog-text');
-            if(blText) blText.textContent = `${blPct}%`;
+    // Backlog Progress
+    let blTotal = 0, blDone = 0;
+    backlogPlan.syllabus.forEach(s => s.dailyTests.forEach(dt => dt.subs.forEach(sub => {
+        blTotal++;
+        if(allCompleted.has(`Study: ${s.topic} - ${sub}`)) blDone++;
+    })));
+    const blPct = blTotal ? Math.round((blDone/blTotal)*100) : 0;
+    const blBar = document.getElementById('card-backlog-bar');
+    if(blBar) blBar.style.width = `${blPct}%`;
+    const blText = document.getElementById('card-backlog-text');
+    if(blText) blText.textContent = `${blPct}%`;
 
-            // Sidebar / Daily Goal Logic
-            const subjectSelect = document.getElementById('new-task-subject');
-            const selectedSubject = subjectSelect ? subjectSelect.value : 'General';
-            const k = formatDateKey(state.selectedDate);
-            const todays = state.tasks[k] || [];
-            
-            let filteredTasks = todays;
-            if (selectedSubject !== 'General') filteredTasks = todays.filter(t => t.subject === selectedSubject);
+    // Sidebar / Daily Goal Logic
+    const subjectSelect = document.getElementById('new-task-subject');
+    const selectedSubject = subjectSelect ? subjectSelect.value : 'General';
+    const k = formatDateKey(state.selectedDate);
+    const todays = state.tasks[k] || [];
+    
+    let filteredTasks = todays;
+    if (selectedSubject !== 'General') filteredTasks = todays.filter(t => t.subject === selectedSubject);
 
-            const totalFiltered = filteredTasks.length;
-            const completedFiltered = filteredTasks.filter(t=>t.completed).length;
-            const dayPct = totalFiltered ? Math.round((completedFiltered / totalFiltered)*100) : 0;
-            
-            // CONFETTI & SOUND LOGIC
-            if (totalFiltered > 0 && dayPct === 100 && !state.goalCompletedToday) {
-                // Check if this completion just happened (avoid looping on re-render)
-                state.goalCompletedToday = true; 
-                try {
-                    // Realistic Confetti Fire
-                    var count = 200;
-                    var defaults = { origin: { y: 0.7 } };
-
-                    function fire(particleRatio, opts) {
-                        if (window.confetti) {
-                            confetti(Object.assign({}, defaults, opts, {
-                                particleCount: Math.floor(count * particleRatio)
-                            }));
-                        }
-                    }
-
-                    fire(0.25, { spread: 26, startVelocity: 55, });
-                    fire(0.2, { spread: 60, });
-                    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
-                    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
-                    fire(0.1, { spread: 120, startVelocity: 45, });
-                    
-                    // Sound
-                    successSound.currentTime = 0;
-                    successSound.play().catch(e => console.log("Audio play failed (interaction required first)"));
-                } catch(e) {
-                    console.log("Effects failed", e);
+    const totalFiltered = filteredTasks.length;
+    const completedFiltered = filteredTasks.filter(t=>t.completed).length;
+    const dayPct = totalFiltered ? Math.round((completedFiltered / totalFiltered)*100) : 0;
+    
+    // Confetti & Sound Logic
+    if (totalFiltered > 0 && dayPct === 100 && !state.goalCompletedToday) {
+        state.goalCompletedToday = true; 
+        try {
+            var count = 200;
+            var defaults = { origin: { y: 0.7 } };
+            function fire(particleRatio, opts) {
+                if (window.confetti) {
+                    confetti(Object.assign({}, defaults, opts, {
+                        particleCount: Math.floor(count * particleRatio)
+                    }));
                 }
-            } else if (dayPct < 100) {
-                state.goalCompletedToday = false;
             }
+            fire(0.25, { spread: 26, startVelocity: 55, });
+            fire(0.2, { spread: 60, });
+            fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+            fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+            fire(0.1, { spread: 120, startVelocity: 45, });
+            successSound.currentTime = 0;
+            successSound.play().catch(e => console.log("Audio play failed"));
+        } catch(e) { console.log("Effects failed", e); }
+    } else if (dayPct < 100) {
+        state.goalCompletedToday = false;
+    }
 
-            // Gradient Bar
-            let completedExamCount = filteredTasks.filter(t => t.completed && t.type === 'main').length;
-            let completedBacklogCount = filteredTasks.filter(t => t.completed && t.type === 'backlog').length;
-            let gradientStyle = `bg-brand-500`; 
-            
-            if (completedFiltered > 0) {
-                const totalScored = completedExamCount + completedBacklogCount;
-                if (totalScored > 0) {
-                    const examShare = (completedExamCount / totalScored) * 100;
-                    gradientStyle = `background: linear-gradient(90deg, #0ea5e9 0%, #0ea5e9 ${examShare}%, #f97316 ${examShare}%, #f97316 100%)`;
-                } else { gradientStyle = `background-color: #0ea5e9`; }
-            } else { gradientStyle = `background-color: #0ea5e9`; }
+    // Gradient Bar
+    let completedExamCount = filteredTasks.filter(t => t.completed && t.type === 'main').length;
+    let completedBacklogCount = filteredTasks.filter(t => t.completed && t.type === 'backlog').length;
+    let gradientStyle = `bg-brand-500`; 
+    
+    if (completedFiltered > 0) {
+        const totalScored = completedExamCount + completedBacklogCount;
+        if (totalScored > 0) {
+            const examShare = (completedExamCount / totalScored) * 100;
+            gradientStyle = `background: linear-gradient(90deg, #0ea5e9 0%, #0ea5e9 ${examShare}%, #f97316 ${examShare}%, #f97316 100%)`;
+        } else { gradientStyle = `background-color: #0ea5e9`; }
+    } else { gradientStyle = `background-color: #0ea5e9`; }
 
-            const sideBar = document.getElementById('sidebar-progress-bar');
-            if(sideBar) {
-                sideBar.style = `width: ${dayPct}%; ${gradientStyle}`;
-                sideBar.classList.remove('bg-brand-500'); 
-            }
-            
-            const sideText = document.getElementById('sidebar-progress-text');
-            if(sideText) sideText.textContent = `${dayPct}%`;
-// --- START OF NEW CODE FOR MOBILE ---
-            const mobSideBar = document.getElementById('mobile-sidebar-progress-bar');
-            if(mobSideBar) {
-                mobSideBar.style = `width: ${dayPct}%; ${gradientStyle}`;
-                mobSideBar.classList.remove('bg-brand-500'); 
-            }
-            
-            const mobSideText = document.getElementById('mobile-sidebar-progress-text');
-            if(mobSideText) mobSideText.textContent = `${dayPct}%`;
-            // --- END OF NEW CODE FOR MOBILE ---
-            
-            const footerLabel = document.getElementById('footer-goal-label');
-            if(footerLabel) footerLabel.textContent = selectedSubject === 'General' ? 'Daily Goal' : `${selectedSubject} Goal`;
-        }
+    const sideBar = document.getElementById('sidebar-progress-bar');
+    if(sideBar) {
+        sideBar.style = `width: ${dayPct}%; ${gradientStyle}`;
+        sideBar.classList.remove('bg-brand-500'); 
+    }
+    const sideText = document.getElementById('sidebar-progress-text');
+    if(sideText) sideText.textContent = `${dayPct}%`;
+
+    const mobSideBar = document.getElementById('mobile-sidebar-progress-bar');
+    if(mobSideBar) {
+        mobSideBar.style = `width: ${dayPct}%; ${gradientStyle}`;
+        mobSideBar.classList.remove('bg-brand-500'); 
+    }
+    const mobSideText = document.getElementById('mobile-sidebar-progress-text');
+    if(mobSideText) mobSideText.textContent = `${dayPct}%`;
+    
+    const footerLabel = document.getElementById('footer-goal-label');
+    if(footerLabel) footerLabel.textContent = selectedSubject === 'General' ? 'Daily Goal' : `${selectedSubject} Goal`;
+}
 
  function createTaskElementHTML(t, isSubTask = false) {
             // Updated Styles for "Pill" look
