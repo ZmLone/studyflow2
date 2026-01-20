@@ -2179,7 +2179,6 @@ window.renderLeaderboardList = function() {
     if(window.lucide) lucide.createIcons({ root: list });
 };
      
-// --- PROFILE FUNCTIONS ---
     window.openProfileModal = function() {
         const input = document.getElementById('profile-name-input');
         if(state.displayName) input.value = state.displayName;
@@ -3513,3 +3512,4 @@ if (document.readyState === 'loading') {
 window.addEventListener("DOMContentLoaded", () => {
   document.body.classList.add("loaded");
 });
+
