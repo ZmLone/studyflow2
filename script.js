@@ -165,6 +165,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
                 state.mistakes = []; // Reset mistakes on logout
                 state.expandedFocusGroups = {};
                 state.expandedTests = {};
+                leaderboardCache = [];
                 renderAll();
                 document.getElementById('auth-modal').classList.remove('hidden');
             } else {
@@ -1966,10 +1967,10 @@ window.renderLeaderboardList = function() {
     const list = document.getElementById('leaderboard-list');
     if(!list) return;
 
-    // 1. Live Recalculate
+    // 1. Live Recalculate My Stats
     const myStats = calculateUserStats();
     
-    // 2. Update Profile Card (Top Section)
+    // 2. Update Profile Card Stats
     const myNameEl = document.getElementById('lb-user-name');
     if(myNameEl) myNameEl.textContent = state.displayName || (currentUser ? currentUser.email.split('@')[0] : "Guest");
     
@@ -1980,16 +1981,24 @@ window.renderLeaderboardList = function() {
     const myId = currentUser ? currentUser.uid : null;
     let sortedData = [...leaderboardCache];
 
-    // --- LEAGUE FILTER ---
+    // 3. LEAGUE FILTER (Only show users in the same exam)
     const currentExamName = state.nextExam.name;
     const headerTitle = document.querySelector('#view-leaderboard h1');
     if(headerTitle) headerTitle.innerHTML = `<i data-lucide="trophy" class="w-6 h-6 text-yellow-500"></i> Leaderboard <span class="hidden md:inline-block text-xs bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded ml-2 align-middle">${currentExamName} Season</span>`;
 
-    // Filter strictly by current exam
     sortedData = sortedData.filter(u => u.currentExam === currentExamName);
 
-    // Sort by Overall Score (High to Low)
-    sortedData.sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0));
+    // 4. RESTORED SORTING LOGIC (The Fix)
+    // This ensures the list re-orders based on the tab you clicked
+    if (activeRankTab === 'overall') {
+        sortedData.sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0));
+    } else if (activeRankTab === 'exam') {
+        sortedData.sort((a, b) => (b.mainPct || 0) - (a.mainPct || 0));
+    } else if (activeRankTab === 'backlog') {
+        sortedData.sort((a, b) => (b.blPct || 0) - (a.blPct || 0));
+    } else if (activeRankTab === 'tests') {
+        sortedData.sort((a, b) => (b.testCount || 0) - (a.testCount || 0));
+    }
 
     // Update My Rank Display
     const myRankEl = document.getElementById('lb-my-rank');
@@ -2004,6 +2013,91 @@ window.renderLeaderboardList = function() {
         if(window.lucide) lucide.createIcons({ root: list });
         return;
     }
+
+    // 5. RENDER CARDS
+    list.innerHTML = sortedData.map((user, index) => {
+        const isMe = user.id === myId;
+        
+        // Use live stats for "Me", cached for others
+        const stats = isMe ? myStats : user;
+        const mainPct = stats.mainPct || 0;
+        const blPct = stats.blPct || 0;
+        const testCnt = stats.testCount || 0;
+        const overall = stats.overallPct || Math.round((mainPct * 0.7) + (blPct * 0.3));
+
+        // Rank Styling
+        let rankBadge = `<span class="font-bold text-slate-500 text-sm">#${index + 1}</span>`;
+        let cardBorder = isMe ? "border-brand-500 ring-1 ring-brand-500" : "border-slate-200 dark:border-slate-800";
+        let cardBg = isMe ? "bg-brand-50/50 dark:bg-brand-900/10" : "bg-white dark:bg-slate-900";
+        
+        // Medals for Top 3
+        if (index === 0) {
+            rankBadge = `<div class="w-8 h-8 rounded-full bg-yellow-400 text-yellow-900 flex items-center justify-center font-bold text-sm shadow-sm"><i data-lucide="crown" class="w-4 h-4"></i></div>`;
+            cardBorder = "border-yellow-400/50";
+        } else if (index === 1) {
+            rankBadge = `<div class="w-8 h-8 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center font-bold text-sm shadow-sm">2</div>`;
+        } else if (index === 2) {
+            rankBadge = `<div class="w-8 h-8 rounded-full bg-orange-300 text-orange-800 flex items-center justify-center font-bold text-sm shadow-sm">3</div>`;
+        }
+
+        const userName = user.displayName || (user.email ? user.email.split('@')[0] : 'Anonymous');
+        const firstLetter = userName.charAt(0).toUpperCase();
+
+        // Highlight the metric being sorted
+        const highlightClass = "text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20 rounded px-1";
+        
+        return `
+            <div class="relative flex flex-col md:flex-row md:items-center gap-4 p-4 rounded-xl border ${cardBorder} ${cardBg} mb-3 transition-all hover:scale-[1.01] hover:shadow-md group">
+                
+                <div class="flex items-center gap-4 flex-1">
+                    <div class="shrink-0 w-8 flex justify-center">${rankBadge}</div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-sm font-bold text-slate-600 dark:text-slate-300 shadow-inner">
+                            ${firstLetter}
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                ${userName}
+                                ${isMe ? '<span class="bg-brand-100 dark:bg-brand-900 text-brand-700 dark:text-brand-300 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">You</span>' : ''}
+                            </p>
+                            <p class="text-[10px] text-slate-500 font-medium">League: ${user.currentExam || 'Unknown'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full md:w-48 flex flex-col justify-center">
+                    <div class="flex justify-between text-[10px] font-bold text-slate-400 uppercase mb-1">
+                        <span class="${activeRankTab === 'overall' ? 'text-brand-500' : ''}">Overall</span>
+                        <span class="${index < 3 ? 'text-brand-600 dark:text-brand-400' : ''}">${overall}%</span>
+                    </div>
+                    <div class="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-brand-500 to-indigo-500 rounded-full" style="width: ${overall}%"></div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 justify-between md:justify-end w-full md:w-auto mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800/50">
+                    <div class="flex flex-col items-center px-3 border-r border-slate-100 dark:border-slate-800 last:border-0 ${activeRankTab === 'exam' ? 'bg-slate-50 dark:bg-slate-800/50 rounded-lg' : ''}">
+                        <span class="text-[10px] uppercase font-bold text-slate-400">Exam</span>
+                        <span class="text-sm font-bold ${activeRankTab === 'exam' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-700 dark:text-slate-300'}">${mainPct}%</span>
+                    </div>
+                    <div class="flex flex-col items-center px-3 border-r border-slate-100 dark:border-slate-800 last:border-0 ${activeRankTab === 'backlog' ? 'bg-slate-50 dark:bg-slate-800/50 rounded-lg' : ''}">
+                        <span class="text-[10px] uppercase font-bold text-slate-400">Backlog</span>
+                        <span class="text-sm font-bold ${activeRankTab === 'backlog' ? 'text-orange-500' : 'text-slate-700 dark:text-slate-300'}">${blPct}%</span>
+                    </div>
+                    <div class="flex flex-col items-center px-3 ${activeRankTab === 'tests' ? 'bg-slate-50 dark:bg-slate-800/50 rounded-lg' : ''}">
+                        <span class="text-[10px] uppercase font-bold text-slate-400">Tests</span>
+                        <span class="text-sm font-bold ${activeRankTab === 'tests' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-700 dark:text-slate-300'}">${testCnt}</span>
+                    </div>
+                </div>
+
+            </div>
+        `;
+    }).join('');
+
+    if(window.lucide) lucide.createIcons({ root: list });
+};
+
+
 
     // --- NEW MODERN CARD DESIGN ---
     list.innerHTML = sortedData.map((user, index) => {
@@ -2084,7 +2178,6 @@ window.renderLeaderboardList = function() {
 
     if(window.lucide) lucide.createIcons({ root: list });
 };
-
      
 // --- PROFILE FUNCTIONS ---
     window.openProfileModal = function() {
@@ -2177,7 +2270,7 @@ window.checkStudyPace = function() {
                             points: pts
                         });
                         totalRemainingPoints += pts;
-                    
+                   
                 }
             });
         });
@@ -2697,14 +2790,7 @@ window.assignChapterTime = function(chapName, inputId) {
         setTimeout(() => toast.remove(), 3000);
     }
 };
- document.addEventListener('DOMContentLoaded', init);
-
-        // Optimization: FOUC listener - Triggered on DOMContentLoaded instead of Load for faster paint
-        document.addEventListener('DOMContentLoaded', () => {
-            // Small timeout to allow Tailwind CDN to parse initial classes
-            setTimeout(() => document.body.classList.add('loaded'), 50);
-        });
-
+ 
         // UTILITY: Debounce for search performance
         function debounce(func, wait) {
             let timeout;
@@ -3389,12 +3475,41 @@ window.showPopup = function(type, header, text) {
 
 // FIX: Must use 'window.' so the HTML onclick="closeModal()" can see it
 window.closeModal = function() {
+    const modal = document.getElementById('customModal');
+    const backdrop = document.getElementById('modalBackdrop');
+    const card = document.getElementById('modalCard');
+
     backdrop.classList.add('opacity-0');
     card.classList.remove('scale-100', 'opacity-100');
     card.classList.add('scale-95', 'opacity-0');
     
-setTimeout(() => {
+    setTimeout(() => {
         modal.classList.add('hidden');
     }, 300); 
-
 };
+
+// --- APP STARTUP LOGIC (Fixed for Modules) ---
+function startApp() {
+    console.log("🚀 Starting App...");
+    
+    // 1. Run the Setup
+    init(); 
+    
+    // 2. Reveal the UI (Lift the curtain)
+
+    setTimeout(() => {
+        document.body.classList.add('loaded');
+    }, 50);
+}
+
+// Check if the page is already ready (Common issue with modules)
+if (document.readyState === 'loading') {
+    // If still loading, wait for the event
+    document.addEventListener('DOMContentLoaded', startApp);
+} else {
+    // If already loaded, run immediately!
+    startApp();
+}
+window.addEventListener("DOMContentLoaded", () => {
+  document.body.classList.add("loaded");
+});
