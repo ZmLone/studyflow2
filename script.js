@@ -3475,14 +3475,19 @@ window.showPopup = function(type, header, text) {
 
 // FIX: Must use 'window.' so the HTML onclick="closeModal()" can see it
 window.closeModal = function() {
+    const modal = document.getElementById('customModal');
+    const backdrop = document.getElementById('modalBackdrop');
+    const card = document.getElementById('modalCard');
+
     backdrop.classList.add('opacity-0');
     card.classList.remove('scale-100', 'opacity-100');
     card.classList.add('scale-95', 'opacity-0');
     
-setTimeout(() => {
+    setTimeout(() => {
         modal.classList.add('hidden');
     }, 300); 
 };
+
 // --- APP STARTUP LOGIC (Fixed for Modules) ---
 function startApp() {
     console.log("🚀 Starting App...");
@@ -3496,3 +3501,12 @@ function startApp() {
     }, 50);
 }
 
+// Check if the page is already ready (Common issue with modules)
+if (document.readyState === 'loading') {
+    // If still loading, wait for the event
+    document.addEventListener('DOMContentLoaded', startApp);
+} else {
+    // If already loaded, run immediately!
+    startApp();
+}
+// END OF FILE - NO EXTRA BRACKETS BELOW THIS LINE
