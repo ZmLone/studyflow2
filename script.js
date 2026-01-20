@@ -1275,9 +1275,7 @@ function saveData() {
 
         // 2. Save Leaderboard Entry (FIXED ERROR HANDLING)
         const lbRef = doc(db, 'leaderboard', currentUser.uid);
-        // 2. Save Leaderboard Entry
-        const lbRef = doc(db, 'leaderboard', currentUser.uid);
-        
+
         // Use the new stats calculated above
         setDoc(lbRef, {
             email: currentUser.email || 'Anonymous',
