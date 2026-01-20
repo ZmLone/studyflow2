@@ -1273,6 +1273,7 @@ function saveData() {
             email: currentUser.email || 'Anonymous',
             displayName: state.displayName || 'Anonymous',
             ...stats,
+currentExam: state.nextExam.name, 
             lastUpdated: new Date()
         }, { merge: true }).catch(err => {
             console.error("Leaderboard Save failed (Check Firestore Rules):", err);
@@ -1972,7 +1973,15 @@ window.renderLeaderboardList = function() {
     // 3. Render the List from Cache
     const myId = currentUser ? currentUser.uid : null;
     let sortedData = [...leaderboardCache];
+// --- NEW: FILTER BY CURRENT EXAM ---
+    const currentExamName = state.nextExam.name;
+    // Update header to show league
+    const headerTitle = document.querySelector('#view-leaderboard h1');
+    if(headerTitle) headerTitle.innerHTML = `<i data-lucide="trophy" class="w-6 h-6 text-yellow-500"></i> Leaderboard <span class="text-xs bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded ml-2 align-middle">${currentExamName} League</span>`;
 
+    // Only show users in the same exam league
+    sortedData = sortedData.filter(u => u.currentExam === currentExamName);
+    // ------------------------------------
     // Sort
     if (activeRankTab === 'overall') sortedData.sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0));
     else if (activeRankTab === 'exam') sortedData.sort((a, b) => (b.mainPct || 0) - (a.mainPct || 0));
@@ -2061,6 +2070,7 @@ window.renderLeaderboardList = function() {
 
 let currentAiSuggestions = { main: [], backlog: [] };
 
+// --- FIXED SMART MIX ENGINE ---
 window.checkStudyPace = function() {
     const container = document.getElementById('ai-strategy-container');
     if (!container) return;
@@ -2118,12 +2128,9 @@ window.checkStudyPace = function() {
         if (allPending.length === 0) return null;
 
         // 2. THE GREEDY SORT (Eat the Frog)
-        // Sort by Points DESCENDING. You MUST do Physics/Hard Chem first.
         allPending.sort((a, b) => b.points - a.points);
 
         // 3. FRONT-LOADING CALCULATION
-        // Do 15% EXTRA work today to build a safety buffer for later.
-        // If < 5 days left (Panic Mode), increase to 25% extra.
         const bufferMultiplier = daysLeft < 5 ? 1.25 : 1.15;
         const dailyTargetPoints = Math.ceil((totalRemainingPoints / daysLeft) * bufferMultiplier);
 
@@ -2137,7 +2144,12 @@ window.checkStudyPace = function() {
             currentPoints += task.points;
         }
 
-        // 5. CHECK PLANNED STATUS
+        // --- CRITICAL FIX: SAVE TO GLOBAL STORE ---
+        // This was missing! The button didn't know what to accept.
+        currentAiSuggestions[trackName] = selectedBatch; 
+        // ------------------------------------------
+
+        // 5. CHECK PLANNED STATUS (Hide if you already added them today)
         const k = formatDateKey(state.selectedDate);
         const currentTasks = state.tasks[k] || [];
         const isPlanned = selectedBatch.every(item => {
@@ -2154,7 +2166,7 @@ window.checkStudyPace = function() {
 
         // 6. GENERATE PREVIEW STATS
         const previewMap = selectedBatch.reduce((acc, item) => {
-            let n = item.subject.substring(0,3); // Phy, Che, Bot...
+            let n = item.subject.substring(0,3); 
             if(item.subject === 'Chemistry') n = item.points >= 3 ? 'Org/Phys' : 'Inorg';
             acc[n] = (acc[n] || 0) + 1;
             return acc;
@@ -2172,18 +2184,15 @@ window.checkStudyPace = function() {
     }
 
     // --- RENDER UI ---
-    const mainStats = generateSmartMix('main', state.nextExam.syllabus, state.nextExam.date, 'violet');
-    const backlogStats = generateSmartMix('backlog', backlogPlan.syllabus, backlogPlan.date, 'orange');
-
     let html = '';
-
+    
+    // Render Function (Moved inside to access scope)
     const renderCard = (stats) => {
         const isV = stats.color === 'violet';
         const bg = isV ? 'bg-violet-50 dark:bg-violet-900/10' : 'bg-orange-50 dark:bg-orange-900/10';
         const border = isV ? 'border-violet-200 dark:border-violet-800' : 'border-orange-200 dark:border-orange-800';
         const textMain = isV ? 'text-violet-700 dark:text-violet-300' : 'text-orange-700 dark:text-orange-300';
         const btnBg = isV ? 'bg-violet-600 hover:bg-violet-700' : 'bg-orange-600 hover:bg-orange-700';
-
         const mixText = Object.entries(stats.preview).map(([k,v]) => `${k}: ${v}`).join(', ');
 
         return `
@@ -2207,13 +2216,19 @@ window.checkStudyPace = function() {
         </div>`;
     };
 
-    if (mainStats) html += renderCard(mainStats);
-    if (backlogStats) html += renderCard(backlogStats);
+    if (state.nextExam && state.nextExam.syllabus) {
+        const mainStats = generateSmartMix('main', state.nextExam.syllabus, state.nextExam.date, 'violet');
+        if (mainStats) html += renderCard(mainStats);
+    }
+    
+    if (typeof backlogPlan !== 'undefined' && backlogPlan.syllabus) {
+        const backlogStats = generateSmartMix('backlog', backlogPlan.syllabus, backlogPlan.date, 'orange');
+        if (backlogStats) html += renderCard(backlogStats);
+    }
 
     container.innerHTML = html;
     if (window.lucide) lucide.createIcons({ root: container });
 };
-
 window.acceptAiPlan = function(track) {
     const suggestions = currentAiSuggestions[track];
     if (!suggestions || suggestions.length === 0) return;
@@ -2702,12 +2717,15 @@ function renderStats() {
             if(elements.sylTitle) elements.sylTitle.textContent = state.nextExam.name + " Syllabus";
             if(elements.sylDate) elements.sylDate.textContent = formattedDate;
             if(elements.sylDays) elements.sylDays.textContent = `${diff} Days Left`;
+const blDate = new Date(backlogPlan.date); blDate.setHours(0,0,0,0);
+            
+            // FIX: Subtract 1 day to exclude the deadline day itself
+            let rawBlDiff = Math.ceil((blDate - today)/(1000*60*60*24));
+            const blDiff = rawBlDiff > 0 ? rawBlDiff - 1 : rawBlDiff;
 
-            const blDate = new Date(backlogPlan.date); blDate.setHours(0,0,0,0);
-            const blDiff = Math.ceil((blDate - today)/(1000*60*60*24));
             if(elements.blDays) elements.blDays.textContent = `${blDiff} Days Left`;
             if(elements.blLarge) elements.blLarge.textContent = blDiff;
-
+           
             // Global Progress Calculation
             const allCompleted = new Set(Object.values(state.tasks).flat().filter(t => t.completed).map(t => t.text));
             
