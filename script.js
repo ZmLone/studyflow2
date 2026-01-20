@@ -3487,28 +3487,3 @@ window.closeModal = function() {
         modal.classList.add('hidden');
     }, 300); 
 };
-
-// --- APP STARTUP LOGIC (Fixed for Modules) ---
-function startApp() {
-    console.log("🚀 Starting App...");
-    
-    // 1. Run the Setup
-    init(); 
-    
-    // 2. Reveal the UI (Lift the curtain)
-    setTimeout(() => {
-        document.body.classList.add('loaded');
-    }, 50);
-}
-
-// Check if the page is already ready (Common issue with modules)
-if (document.readyState === 'loading') {
-    // If still loading, wait for the event
-    document.addEventListener('DOMContentLoaded', startApp);
-} else {
-    // If already loaded, run immediately!
-    startApp();
-}
-window.addEventListener("DOMContentLoaded", () => {
-  document.body.classList.add("loaded");
-});
