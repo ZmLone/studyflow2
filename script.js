@@ -2177,7 +2177,7 @@ window.checkStudyPace = function() {
                             points: pts
                         });
                         totalRemainingPoints += pts;
-                    }
+                    
                 }
             });
         });
@@ -3396,4 +3396,5 @@ window.closeModal = function() {
 setTimeout(() => {
         modal.classList.add('hidden');
     }, 300); 
+
 };
