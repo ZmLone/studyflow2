@@ -98,3 +98,8 @@ body.loaded { visibility: visible; opacity: 1; }
 #mobile-sidebar { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 .menu-open #mobile-sidebar { transform: translateX(0); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
 .menu-closed #mobile-sidebar { transform: translateX(-100%); }
+/* STOP BLURRING ON RESIZE */
+.resize-animation-stopper * {
+    animation: none !important;
+    transition: none !important;
+}

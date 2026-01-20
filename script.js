@@ -3378,3 +3378,17 @@ setTimeout(() => {
         modal.classList.add('hidden');
     }, 300); 
 };
+// --- FIX: STOP BLURRING ON RESIZE ---
+let resizeTimer;
+window.addEventListener("resize", () => {
+  // 1. Add a class to body that stops all transitions
+  document.body.classList.add("resize-animation-stopper");
+  
+  // 2. Clear previous timer
+  clearTimeout(resizeTimer);
+  
+  // 3. Remove the class 400ms after resizing stops
+  resizeTimer = setTimeout(() => {
+    document.body.classList.remove("resize-animation-stopper");
+  }, 400);
+});
