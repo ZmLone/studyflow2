@@ -2780,7 +2780,17 @@ function renderStats() {
             if(elements.sylDate) elements.sylDate.textContent = formattedDate;
             if(elements.sylDays) elements.sylDays.textContent = `${diff} Days Left`;
 const blDate = new Date(backlogPlan.date); blDate.setHours(0,0,0,0);
-            
+// NEW LOGIC BLOCK:
+if(elements.blDateDisplay && typeof backlogPlan !== 'undefined') {
+    elements.blDateDisplay.textContent = backlogPlan.date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+    });
+}
+
+
+    
             // FIX: Subtract 1 day to exclude the deadline day itself
             let rawBlDiff = Math.ceil((blDate - today)/(1000*60*60*24));
             const blDiff = rawBlDiff > 0 ? rawBlDiff - 1 : rawBlDiff;
@@ -3603,4 +3613,5 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSnowUI();
     }
 });
+
 
