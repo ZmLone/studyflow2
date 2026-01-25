@@ -937,10 +937,10 @@ const backlogPlan = {
            topic: "GOC: General Organic Chem", 
            dailyTests: [
                {name:"DT-23 (Chem-XI)", subs:["IUPAC Nomenclature"]},
-               {name:"DT-24 (Chem-XI)", subs:["Isomerism", "Nucleophiles & Electrophiles"]},
+               {name:"DT-24 (Chem-XI)", subs:["Nucleophiles & Electrophiles"]},
                {name:"DT-25 (Chem-XI)", subs:["Inductive Effect", "Resonance", "Hyperconjugation"]},
-               {name:"DT-26 (Chem-XI)", subs:["Carbocation", "Carbanion", "Free Radicals"]},
-               {name:"DT-27 (Chem-XI)", subs:["Purification Methods", "Qualitative Analysis"]}
+               {name:"DT-26 (Chem-XI)", subs:["Carbocation", "Carbanion", "Free Radicals"]}
+               
            ] 
        }
    ]
@@ -3602,4 +3602,5 @@ document.addEventListener('DOMContentLoaded', () => {
         snowActive = false;
         updateSnowUI();
     }
+
 });
