@@ -2108,7 +2108,7 @@ window.renderLeaderboardList = function() {
 
 let currentAiSuggestions = { main: [], backlog: [] };
 
-// --- INTELLIGENT GAP-FILLING SMART MIX (UPGRADED) ---
+// --- INTELLIGENT GAP-FILLING: COHESIVE UNITS LOGIC ---
 window.checkStudyPace = function() {
     const container = document.getElementById('ai-strategy-container');
     if (!container) return;
@@ -2121,54 +2121,57 @@ window.checkStudyPace = function() {
     const k = formatDateKey(state.selectedDate);
     const todaysTasks = state.tasks[k] || [];
 
-    // 1. IMPROVED WEIGHT LOGIC: Granular Difficulty
-    function getWeight(subject, topic) {
+    // 1. DEFINE UNITS & ASSIGN LOGICAL POINTS
+    function getUnitInfo(subject, topic) {
         const t = (topic || '').toLowerCase();
         
-        // --- PHYSICS WEIGHTS ---
+        // --- PHYSICS (The Mental Gym) ---
         if (subject === 'Physics') {
-            // Tier 1: The "Nightmare" Chapters (High conceptual load)
-            if (t.includes('rotation') || t.includes('rotational') || 
-                t.includes('optics') || t.includes('electrostatics') || 
-                t.includes('magnetism') || t.includes('emi') || 
-                t.includes('ac') || t.includes('current') ||
-                t.includes('capacit') || t.includes('oscillation') ||
-                t.includes('waves')) {
-                return 5; 
-            }
-            // Tier 3: The "Easy Scoring" Chapters
-            if (t.includes('physical world') || t.includes('units') || 
-                t.includes('measure') || t.includes('atoms') || 
-                t.includes('nuclei') || t.includes('dual nature') ||
-                t.includes('semiconductor')) {
-                return 3;
-            }
-            // Tier 2: Standard Physics (Kinematics, Thermo, etc.)
-            return 4;
+            // 5 Points: Critical / Heavy Conceptual
+            if (t.includes('electric') || t.includes('electro') || t.includes('magnet') || t.includes('emi') || t.includes('ac') || t.includes('capacitor')) return { id: 'phy_electro', name: 'Electromagnetism', weight: 5 };
+            if (t.includes('optics') || t.includes('wave') || t.includes('ray')) return { id: 'phy_optics', name: 'Optics & Waves', weight: 5 };
+            
+            // 4 Points: Core / Application
+            if (t.includes('mechanics') || t.includes('kinematics') || t.includes('motion') || t.includes('work') || t.includes('rotation') || t.includes('gravitation') || t.includes('fluid') || t.includes('solid')) return { id: 'phy_mech', name: 'Mechanics', weight: 4 };
+            
+            // 3 Points: High Yield / Scoring (Good Minor Theme)
+            if (t.includes('modern') || t.includes('atom') || t.includes('nuclei') || t.includes('dual') || t.includes('semiconductor')) return { id: 'phy_modern', name: 'Modern Physics', weight: 3 };
+            if (t.includes('heat') || t.includes('thermo') || t.includes('kinetic')) return { id: 'phy_heat', name: 'Heat & Thermo', weight: 3 };
+            
+            return { id: 'phy_general', name: 'General Physics', weight: 4 };
         }
 
-        // --- CHEMISTRY WEIGHTS ---
+        // --- CHEMISTRY (The Balance) ---
         if (subject === 'Chemistry') {
-            // Tier 1: Heavy Organic/Physical
-            if (t.includes('equilibrium') || t.includes('thermo') || 
-                t.includes('electro') || t.includes('kinetics') ||
-                t.includes('bonding') || t.includes('organic') || 
-                t.includes('hydrocarbon') || t.includes('aldehyde') || 
-                t.includes('ketone') || t.includes('alcohol')) {
-                return 4;
-            }
-            // Tier 2: Inorganic/Basic
-            return 3;
+            // 4 Points: Deep Dive / Mechanism
+            if (t.includes('organic') || t.includes('hydrocarbon') || t.includes('halo') || t.includes('alcohol') || t.includes('phenol') || t.includes('ether') || t.includes('aldehyde') || t.includes('ketone') || t.includes('amine') || t.includes('goc')) return { id: 'chem_organic', name: 'Organic Chem', weight: 4 };
+            if (t.includes('equilibrium') || t.includes('thermo') || t.includes('kinetics') || t.includes('solution') || t.includes('electro') || t.includes('state')) return { id: 'chem_physical', name: 'Physical Chem', weight: 4 };
+            
+            // 3 Points: Memory / Logic Mix (Good Minor Theme)
+            if (t.includes('coordination') || t.includes('block') || t.includes('periodic') || t.includes('bonding') || t.includes('metal')) return { id: 'chem_inorganic', name: 'Inorganic Chem', weight: 3 };
+            
+            return { id: 'chem_general', name: 'General Chem', weight: 3 };
         }
 
-        // --- BIOLOGY WEIGHTS ---
-        // Bio is "Easy" conceptually but high volume. 
-        // We give it 2 so it doesn't overpower Physics in the "Greedy" sort,
-        // but we will force-include it using the Mix Logic below.
-        return 2; 
+        // --- BIOLOGY (The Volume) ---
+        if (subject === 'Botany' || subject === 'Zoology' || subject === 'Biology') {
+            // 4 Points: Conceptual Bio (Math-like)
+            if (t.includes('genetic') || t.includes('inheritance') || t.includes('molecular') || t.includes('dna') || t.includes('biotech')) return { id: 'bio_genetics', name: 'Genetics/Biotech', weight: 4 };
+            
+            // 3 Points: Standard Bio
+            if (t.includes('reproduction') || t.includes('reproductive')) return { id: 'bio_repro', name: 'Reproduction', weight: 3 };
+            if (t.includes('cell') || t.includes('biomolecule') || t.includes('cycle')) return { id: 'bio_cell', name: 'Cell Biology', weight: 3 };
+            if (t.includes('human') || t.includes('plant phys') || t.includes('respiration') || t.includes('photosynthesis')) return { id: 'bio_physio', name: 'Physiology', weight: 3 };
+            
+            // 2 Points: The "Cool Down" (Perfect Filler)
+            if (t.includes('ecology') || t.includes('environment') || t.includes('diversity') || t.includes('living') || t.includes('classification') || t.includes('morphology') || t.includes('anatomy')) return { id: 'bio_eco', name: 'Diversity/Ecology', weight: 2 };
+            
+            return { id: 'bio_general', name: 'General Bio', weight: 2 };
+        }
+        return { id: 'other', name: 'General', weight: 1 };
     }
 
-    // --- ENGINE: The "Balanced Mix" Algorithm ---
+    // --- ENGINE: The "Focus + Support" Algorithm ---
     function generateSmartMix(trackName, syllabusData, deadlineDate, colorTheme) {
         if (!deadlineDate) return null;
 
@@ -2177,127 +2180,145 @@ window.checkStudyPace = function() {
         if (trackName === 'main') rawDays = rawDays > 0 ? rawDays - 1 : 0;
         const daysLeft = Math.max(1, rawDays);
 
-        // A. GATHER ALL PENDING TASKS
-        let buckets = { 'Physics': [], 'Chemistry': [], 'Botany': [], 'Zoology': [] };
+        // A. GROUP PENDING TASKS BY UNIT
+        let unitBuckets = {}; 
         let totalRemainingPoints = 0;
 
         syllabusData.forEach(chapter => {
             chapter.dailyTests.forEach(dt => {
                 if (!state.dailyTestsAttempted[dt.name]) {
-                    const pts = getWeight(chapter.subject, chapter.topic);
-                    
-                    // Check if already planned today
+                    // Check if already planned
                     const isAlreadyPlanned = dt.subs.some(sub => 
                         todaysTasks.some(t => t.text === `Study: ${chapter.topic} - ${sub}`)
                     );
 
                     if (!isAlreadyPlanned) {
+                        const info = getUnitInfo(chapter.subject, chapter.topic);
                         const taskObj = {
                             name: dt.name,
                             subject: chapter.subject,
                             topic: chapter.topic,
-                            points: pts
+                            unitName: info.name,
+                            points: info.weight,
+                            subs: dt.subs
                         };
                         
-                        // Sort into buckets
-                        if(buckets[chapter.subject]) buckets[chapter.subject].push(taskObj);
-                        else buckets[chapter.subject] = [taskObj]; // Fallback
-                        
-                        totalRemainingPoints += pts;
+                        if (!unitBuckets[info.id]) {
+                            unitBuckets[info.id] = { 
+                                id: info.id, 
+                                name: info.name, 
+                                subject: chapter.subject, 
+                                totalPoints: 0, 
+                                tasks: [] 
+                            };
+                        }
+                        unitBuckets[info.id].tasks.push(taskObj);
+                        unitBuckets[info.id].totalPoints += info.weight;
+                        totalRemainingPoints += info.weight;
                     }
                 }
             });
         });
 
-        // Combine Bio for simpler mixing logic
-        buckets['Biology'] = [...buckets['Botany'], ...buckets['Zoology']];
-        delete buckets['Botany'];
-        delete buckets['Zoology'];
-
-        // Sort buckets internally by weight (Hardest chapters first)
-        Object.keys(buckets).forEach(subj => {
-            buckets[subj].sort((a, b) => b.points - a.points);
-        });
-
         if (totalRemainingPoints === 0) return null;
 
-        // B. CALCULATE GAP
+        // B. CALCULATE CAPACITY
         let manualPoints = 0;
         todaysTasks.forEach(t => {
             if (t.type === trackName) {
                 let topic = t.chapter || (t.text.includes(' - ') ? t.text.split(' - ')[0].replace('Study: ', '') : '');
-                manualPoints += getWeight(t.subject, topic);
+                manualPoints += getUnitInfo(t.subject, topic).weight;
             }
         });
 
-        const bufferMultiplier = daysLeft < 10 ? 1.3 : 1.1; // Higher urgency as exam nears
+        const bufferMultiplier = daysLeft < 10 ? 1.3 : 1.15;
         const rawDailyTarget = Math.ceil((totalRemainingPoints / daysLeft) * bufferMultiplier);
         let neededPoints = rawDailyTarget - manualPoints;
 
-        if (neededPoints <= 0) return null; 
+        if (neededPoints <= 0) return null;
 
-        // C. BALANCED SELECTION (Interleaved Round-Robin)
-        // We want a mix like: P, C, P, B, P, C... (Heavy on P, but inclusive)
+        // C. PICK "MAJOR" AND "MINOR" THEMES
+        let sortedUnits = Object.values(unitBuckets).sort((a, b) => b.totalPoints - a.totalPoints);
         
+        if (sortedUnits.length === 0) return null;
+
+        // 1. Major Theme: The heaviest pending unit
+        let majorUnit = sortedUnits[0]; 
+        
+        // 2. Minor Theme: Must be a DIFFERENT subject logic
+        let minorUnit = null;
+        for (let i = 1; i < sortedUnits.length; i++) {
+            const majorSubj = majorUnit.subject;
+            const thisSubj = sortedUnits[i].subject;
+            
+            // Group all Bios together for collision detection
+            const isBio = (s) => s === 'Botany' || s === 'Zoology' || s === 'Biology';
+            const isSameFamily = (majorSubj === thisSubj) || (isBio(majorSubj) && isBio(thisSubj));
+
+            if (!isSameFamily) {
+                minorUnit = sortedUnits[i];
+                break;
+            }
+        }
+        // Fallback: If only one subject exists (e.g., only Physics left), take next unit
+        if (!minorUnit && sortedUnits.length > 1) minorUnit = sortedUnits[1];
+
+        // D. FILL THE BASKET (70% Major, 30% Minor)
         let selectedBatch = [];
         let currentPoints = 0;
-        
-        // Define the mixing pattern based on priority
-        // Pattern: [Primary, Secondary, Primary, Tertiary, Primary, Secondary...]
-        // This ensures Physics (Primary) gets 50% slots, others get 25% each.
-        const mixPattern = ['Physics', 'Chemistry', 'Physics', 'Biology', 'Physics', 'Chemistry', 'Biology'];
-        let patternIdx = 0;
-        let infiniteLoopGuard = 0;
+        let safetyCounter = 0;
 
-        while (currentPoints < neededPoints && infiniteLoopGuard < 100) {
-            infiniteLoopGuard++;
-            
-            // 1. Pick subject from pattern
-            const preferredSubj = mixPattern[patternIdx % mixPattern.length];
-            
-            // 2. Try to pull a task from that bucket
+        while (currentPoints < neededPoints && safetyCounter < 50) {
+            safetyCounter++;
             let task = null;
-            if (buckets[preferredSubj] && buckets[preferredSubj].length > 0) {
-                task = buckets[preferredSubj].shift(); // Take top (hardest)
+
+            const majorCount = selectedBatch.filter(t => t.unitName === majorUnit.name).length;
+            const minorCount = minorUnit ? selectedBatch.filter(t => t.unitName === minorUnit.name).length : 0;
+            
+            // If Minor unit exists, try to keep it around 30-40% of the mix
+            const wantMinor = minorUnit && (minorCount < Math.ceil(majorCount / 2));
+
+            if (wantMinor && minorUnit.tasks.length > 0) {
+                task = minorUnit.tasks.shift();
+            } else if (majorUnit.tasks.length > 0) {
+                task = majorUnit.tasks.shift();
+            } else if (minorUnit && minorUnit.tasks.length > 0) {
+                // Major empty, fill with Minor
+                task = minorUnit.tasks.shift();
             } else {
-                // If preferred bucket empty, try others in order of difficulty
-                if (buckets['Physics'].length > 0) task = buckets['Physics'].shift();
-                else if (buckets['Chemistry'].length > 0) task = buckets['Chemistry'].shift();
-                else if (buckets['Biology'].length > 0) task = buckets['Biology'].shift();
+                // Both empty, grab from any other available bucket
+                for (let u of sortedUnits) {
+                    if (u.tasks.length > 0) {
+                        task = u.tasks.shift();
+                        break;
+                    }
+                }
             }
 
-            // 3. Add task (if found)
             if (task) {
                 selectedBatch.push(task);
                 currentPoints += task.points;
             } else {
-                break; // No tasks left anywhere
+                break;
             }
-
-            // 4. Advance pattern
-            patternIdx++;
         }
 
         currentAiSuggestions[trackName] = selectedBatch;
 
-        // D. RENDER
-        const previewMap = selectedBatch.reduce((acc, item) => {
-            let n = item.subject.substring(0,3); 
-            // Add visual cue for Hard topics
-            if (item.points >= 5) n += '🔥'; 
-            acc[n] = (acc[n] || 0) + 1;
-            return acc;
-        }, {});
+        // E. PREVIEW TEXT
+        const previewText = [majorUnit.name, minorUnit ? minorUnit.name : '']
+            .filter(Boolean)
+            .join(' + ');
 
         return {
-            name: trackName === 'main' ? 'Smart Mix' : 'Backlog Mix',
+            name: trackName === 'main' ? 'Smart Focus' : 'Backlog Focus',
             days: daysLeft,
             dailyCount: selectedBatch.length,
             points: currentPoints,
             manualPoints: manualPoints,
             color: colorTheme,
             trackId: trackName,
-            preview: previewMap
+            previewText: previewText // e.g. "Electromagnetism + Ecology"
         };
     }
 
@@ -2311,18 +2332,13 @@ window.checkStudyPace = function() {
         const textMain = isV ? 'text-violet-700 dark:text-violet-300' : 'text-orange-700 dark:text-orange-300';
         const btnBg = isV ? 'bg-violet-600 hover:bg-violet-700' : 'bg-orange-600 hover:bg-orange-700';
         
-        // Format preview text
-        const mixText = Object.entries(stats.preview)
-            .map(([k,v]) => `<span class="font-bold">${k}</span>×${v}`)
-            .join(' <span class="text-slate-300 mx-1">|</span> ');
-
         const smartMessage = stats.manualPoints > 0 
             ? `<span class="text-[10px] font-bold opacity-70 block mt-1">(Including your planned ${stats.manualPoints} pts)</span>` 
             : '';
 
         return `
         <div class="${bg} border ${border} rounded-2xl p-5 relative overflow-hidden group shadow-sm mb-4 animate-in slide-in-from-top-2 duration-500">
-            <div class="absolute -right-6 -top-6 ${textMain} opacity-10 transform rotate-12"><i data-lucide="brain-circuit" class="w-32 h-32"></i></div>
+            <div class="absolute -right-6 -top-6 ${textMain} opacity-10 transform rotate-12"><i data-lucide="target" class="w-32 h-32"></i></div>
             <div class="relative z-10 flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div>
                     <div class="flex items-center gap-2 mb-1">
@@ -2330,15 +2346,15 @@ window.checkStudyPace = function() {
                         <span class="text-xs font-bold text-slate-400">${stats.days} Days Left</span>
                     </div>
                     <h3 class="text-lg font-bold text-slate-800 dark:text-white">
-                        Generate Daily Target
+                        Recommended Theme
                         ${smartMessage}
                     </h3>
-                    <div class="flex items-center gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium bg-white/60 dark:bg-black/20 px-3 py-2 rounded-lg border border-${stats.color}-100 dark:border-${stats.color}-900/30 w-fit backdrop-blur-sm">
-                        <i data-lucide="layers" class="w-3.5 h-3.5 ${textMain}"></i><span>${mixText}</span>
+                    <div class="flex items-center gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400 font-bold bg-white/60 dark:bg-black/20 px-3 py-2 rounded-lg border border-${stats.color}-100 dark:border-${stats.color}-900/30 w-fit backdrop-blur-sm">
+                        <i data-lucide="crosshair" class="w-3.5 h-3.5 ${textMain}"></i><span>${stats.previewText}</span>
                     </div>
                 </div>
                 <button onclick="acceptAiPlan('${stats.trackId}')" class="w-full md:w-auto px-6 py-3 ${btnBg} text-white rounded-xl text-sm font-bold shadow-lg shadow-${stats.color}-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Add to Plan
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Accept Mix
                 </button>
             </div>
         </div>`;
@@ -3672,4 +3688,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 });
+
 
