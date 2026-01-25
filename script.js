@@ -838,8 +838,8 @@ const mainSchedule = [
 
 const backlogPlan = {
    name: "Backlog & Revision", // Renamed to reflect mixed content
-   date: new Date('2026-02-01T00:00:00'), // Your Target Date (Feb 1)
-   syllabus: [
+   date: new Date('2026-02-03T00:00:00'), // Updated to Feb 3, 2026
+    syllabus: [
        // =========================================
        // PART 1: AIATS-5 PENDING (Chem/Bio Only)
        // =========================================
@@ -3603,3 +3603,4 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSnowUI();
     }
 });
+
