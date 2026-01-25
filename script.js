@@ -837,8 +837,8 @@ const mainSchedule = [
 ];
 
 const backlogPlan = {
-   name: "Backlog & Revision", // Renamed to reflect mixed content
-   date: new Date('2026-02-01T00:00:00'), // Your Target Date (Feb 1)
+   name: "Backlog & Revision", 
+   date: new Date('2026-02-03T00:00:00'), // Updated to Feb 3
    syllabus: [
        // =========================================
        // PART 1: AIATS-5 PENDING (Chem/Bio Only)
@@ -932,15 +932,15 @@ const backlogPlan = {
        // PART 2: CLASS 11 REVISION (New Section)
        // =========================================
 
-              { 
+       { 
            subject: "Chemistry", 
            topic: "GOC: General Organic Chem", 
            dailyTests: [
                {name:"DT-23 (Chem-XI)", subs:["IUPAC Nomenclature"]},
-               {name:"DT-24 (Chem-XI)", subs:["Nucleophiles & Electrophiles"]},
+               {name:"DT-24 (Chem-XI)", subs:["Nucleophiles & Electrophiles"]}, // Removed Isomerism
                {name:"DT-25 (Chem-XI)", subs:["Inductive Effect", "Resonance", "Hyperconjugation"]},
                {name:"DT-26 (Chem-XI)", subs:["Carbocation", "Carbanion", "Free Radicals"]}
-               
+               // DT-27 Removed (Purification/Qualitative)
            ] 
        }
    ]
@@ -3604,3 +3604,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 });
+
