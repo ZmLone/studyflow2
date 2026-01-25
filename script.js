@@ -2775,8 +2775,22 @@ function renderStats() {
 
             if(elements.name) elements.name.textContent = state.nextExam.name;
             if(elements.date) elements.date.textContent = `Exam Date: ${formattedDate}`;
-            if(elements.days) elements.days.textContent = diff; // Allow negatives to show passed
-            if(elements.sylTitle) elements.sylTitle.textContent = state.nextExam.name + " Syllabus";
+if(elements.days) {
+    elements.days.textContent = diff;
+    
+    // URGENCY FOR MAIN EXAM (Starts at 5 days)
+    if (diff <= 5) {
+        // Neon Pink + Pulse (Beautiful contrast on Blue)
+        elements.days.className = "block text-5xl font-black tracking-tighter text-fuchsia-300 animate-pulse";
+    } else {
+        // Reset to default white
+        elements.days.className = "block text-5xl font-black tracking-tighter";
+    }
+}
+    
+    
+    
+    if(elements.sylTitle) elements.sylTitle.textContent = state.nextExam.name + " Syllabus";
             if(elements.sylDate) elements.sylDate.textContent = formattedDate;
             if(elements.sylDays) elements.sylDays.textContent = `${diff} Days Left`;
 const blDate = new Date(backlogPlan.date); blDate.setHours(0,0,0,0);
@@ -2794,9 +2808,21 @@ if(elements.blDateDisplay && typeof backlogPlan !== 'undefined') {
             // FIX: Subtract 1 day to exclude the deadline day itself
             let rawBlDiff = Math.ceil((blDate - today)/(1000*60*60*24));
             const blDiff = rawBlDiff > 0 ? rawBlDiff  : rawBlDiff;
-
-            if(elements.blDays) elements.blDays.textContent = `${blDiff} Days Left`;
-            if(elements.blLarge) elements.blLarge.textContent = blDiff;
+    
+if(elements.blLarge) elements.blLarge.textContent = blDiff;
+// 2. REPLACE the old 'blDays' line with this new block:
+if(elements.blDays) {
+    elements.blDays.textContent = `${blDiff} Days Left`;
+    
+    // Dynamic Urgency Color Logic
+    if (blDiff <= 3) {
+        // Red + Pulse (Critical)
+        elements.blDays.className = "text-xs font-bold text-red-600 dark:text-red-400 mt-1 animate-pulse";
+    } else {
+        // Orange (Normal)
+        elements.blDays.className = "text-xs font-bold text-orange-600 dark:text-orange-400 mt-1";
+    }
+}           
            
             // Global Progress Calculation
             const allCompleted = new Set(Object.values(state.tasks).flat().filter(t => t.completed).map(t => t.text));
@@ -3613,6 +3639,10 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSnowUI();
     }
 });
+
+
+
+
 
 
 
