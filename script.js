@@ -2108,7 +2108,7 @@ window.renderLeaderboardList = function() {
 
 let currentAiSuggestions = { main: [], backlog: [] };
 
-// --- INTELLIGENT GAP-FILLING SMART MIX ---
+// --- INTELLIGENT GAP-FILLING SMART MIX (UPGRADED) ---
 window.checkStudyPace = function() {
     const container = document.getElementById('ai-strategy-container');
     if (!container) return;
@@ -2121,22 +2121,54 @@ window.checkStudyPace = function() {
     const k = formatDateKey(state.selectedDate);
     const todaysTasks = state.tasks[k] || [];
 
-    // HELPER: Calculate Weight of any Subject/Topic
+    // 1. IMPROVED WEIGHT LOGIC: Granular Difficulty
     function getWeight(subject, topic) {
-        if (subject === 'Physics') return 4;
-        if (subject === 'Chemistry') {
-            const t = (topic || '').toLowerCase();
-            if (t.includes('organic') || t.includes('hydro') || t.includes('halo') || 
-                t.includes('alcohol') || t.includes('aldehyde') || t.includes('amine') || 
-                t.includes('thermo') || t.includes('equilibrium') || t.includes('electro')) {
+        const t = (topic || '').toLowerCase();
+        
+        // --- PHYSICS WEIGHTS ---
+        if (subject === 'Physics') {
+            // Tier 1: The "Nightmare" Chapters (High conceptual load)
+            if (t.includes('rotation') || t.includes('rotational') || 
+                t.includes('optics') || t.includes('electrostatics') || 
+                t.includes('magnetism') || t.includes('emi') || 
+                t.includes('ac') || t.includes('current') ||
+                t.includes('capacit') || t.includes('oscillation') ||
+                t.includes('waves')) {
+                return 5; 
+            }
+            // Tier 3: The "Easy Scoring" Chapters
+            if (t.includes('physical world') || t.includes('units') || 
+                t.includes('measure') || t.includes('atoms') || 
+                t.includes('nuclei') || t.includes('dual nature') ||
+                t.includes('semiconductor')) {
                 return 3;
             }
-            return 2;
+            // Tier 2: Standard Physics (Kinematics, Thermo, etc.)
+            return 4;
         }
-        return 1; // Botany/Zoology
+
+        // --- CHEMISTRY WEIGHTS ---
+        if (subject === 'Chemistry') {
+            // Tier 1: Heavy Organic/Physical
+            if (t.includes('equilibrium') || t.includes('thermo') || 
+                t.includes('electro') || t.includes('kinetics') ||
+                t.includes('bonding') || t.includes('organic') || 
+                t.includes('hydrocarbon') || t.includes('aldehyde') || 
+                t.includes('ketone') || t.includes('alcohol')) {
+                return 4;
+            }
+            // Tier 2: Inorganic/Basic
+            return 3;
+        }
+
+        // --- BIOLOGY WEIGHTS ---
+        // Bio is "Easy" conceptually but high volume. 
+        // We give it 2 so it doesn't overpower Physics in the "Greedy" sort,
+        // but we will force-include it using the Mix Logic below.
+        return 2; 
     }
 
-    // --- ENGINE: The "Gap Filler" Algorithm ---
+    // --- ENGINE: The "Balanced Mix" Algorithm ---
     function generateSmartMix(trackName, syllabusData, deadlineDate, colorTheme) {
         if (!deadlineDate) return null;
 
@@ -2145,91 +2177,124 @@ window.checkStudyPace = function() {
         if (trackName === 'main') rawDays = rawDays > 0 ? rawDays - 1 : 0;
         const daysLeft = Math.max(1, rawDays);
 
-        // 1. CALCULATE TOTAL REMAINING WORK (Backlog + Future)
-        let allPending = [];
+        // A. GATHER ALL PENDING TASKS
+        let buckets = { 'Physics': [], 'Chemistry': [], 'Botany': [], 'Zoology': [] };
         let totalRemainingPoints = 0;
 
         syllabusData.forEach(chapter => {
             chapter.dailyTests.forEach(dt => {
-                // Only include if NOT done 
                 if (!state.dailyTestsAttempted[dt.name]) {
                     const pts = getWeight(chapter.subject, chapter.topic);
                     
-                    // CHECK: Is this specific sub-task ALREADY in today's planner?
-                    // We check if ANY sub-topic of this test is planned
+                    // Check if already planned today
                     const isAlreadyPlanned = dt.subs.some(sub => 
                         todaysTasks.some(t => t.text === `Study: ${chapter.topic} - ${sub}`)
                     );
 
                     if (!isAlreadyPlanned) {
-                        allPending.push({
+                        const taskObj = {
                             name: dt.name,
                             subject: chapter.subject,
                             topic: chapter.topic,
                             points: pts
-                        });
+                        };
+                        
+                        // Sort into buckets
+                        if(buckets[chapter.subject]) buckets[chapter.subject].push(taskObj);
+                        else buckets[chapter.subject] = [taskObj]; // Fallback
+                        
                         totalRemainingPoints += pts;
                     }
                 }
             });
         });
 
-        if (allPending.length === 0) return null; // Nothing left!
+        // Combine Bio for simpler mixing logic
+        buckets['Biology'] = [...buckets['Botany'], ...buckets['Zoology']];
+        delete buckets['Botany'];
+        delete buckets['Zoology'];
 
-        // 2. CALCULATE "ALREADY PLANNED" SCORE
-        // This is the "Intelligence" part. We sum up points of tasks you manually added.
+        // Sort buckets internally by weight (Hardest chapters first)
+        Object.keys(buckets).forEach(subj => {
+            buckets[subj].sort((a, b) => b.points - a.points);
+        });
+
+        if (totalRemainingPoints === 0) return null;
+
+        // B. CALCULATE GAP
         let manualPoints = 0;
         todaysTasks.forEach(t => {
-            // Only count tasks that match this track (Main vs Backlog)
             if (t.type === trackName) {
-                // Try to infer weight from the text or subject
-                let subject = t.subject;
-                let topic = t.chapter || '';
-                if (!topic && t.text.includes(' - ')) topic = t.text.split(' - ')[0].replace('Study: ', '');
-                
-                manualPoints += getWeight(subject, topic);
+                let topic = t.chapter || (t.text.includes(' - ') ? t.text.split(' - ')[0].replace('Study: ', '') : '');
+                manualPoints += getWeight(t.subject, topic);
             }
         });
 
-        // 3. CALCULATE THE GAP (Target - Manual)
-        const bufferMultiplier = daysLeft < 5 ? 1.25 : 1.15;
+        const bufferMultiplier = daysLeft < 10 ? 1.3 : 1.1; // Higher urgency as exam nears
         const rawDailyTarget = Math.ceil((totalRemainingPoints / daysLeft) * bufferMultiplier);
-        
-        // The Magic: Subtract what you've already done/planned
         let neededPoints = rawDailyTarget - manualPoints;
 
-        // If you've already planned MORE than the target, don't suggest anything!
         if (neededPoints <= 0) return null; 
 
-        // 4. FILL THE GAP (Greedy Sort)
-        allPending.sort((a, b) => b.points - a.points); // Hardest first
-
+        // C. BALANCED SELECTION (Interleaved Round-Robin)
+        // We want a mix like: P, C, P, B, P, C... (Heavy on P, but inclusive)
+        
         let selectedBatch = [];
         let currentPoints = 0;
+        
+        // Define the mixing pattern based on priority
+        // Pattern: [Primary, Secondary, Primary, Tertiary, Primary, Secondary...]
+        // This ensures Physics (Primary) gets 50% slots, others get 25% each.
+        const mixPattern = ['Physics', 'Chemistry', 'Physics', 'Biology', 'Physics', 'Chemistry', 'Biology'];
+        let patternIdx = 0;
+        let infiniteLoopGuard = 0;
 
-        for (const task of allPending) {
-            if (currentPoints >= neededPoints) break;
-            selectedBatch.push(task);
-            currentPoints += task.points;
+        while (currentPoints < neededPoints && infiniteLoopGuard < 100) {
+            infiniteLoopGuard++;
+            
+            // 1. Pick subject from pattern
+            const preferredSubj = mixPattern[patternIdx % mixPattern.length];
+            
+            // 2. Try to pull a task from that bucket
+            let task = null;
+            if (buckets[preferredSubj] && buckets[preferredSubj].length > 0) {
+                task = buckets[preferredSubj].shift(); // Take top (hardest)
+            } else {
+                // If preferred bucket empty, try others in order of difficulty
+                if (buckets['Physics'].length > 0) task = buckets['Physics'].shift();
+                else if (buckets['Chemistry'].length > 0) task = buckets['Chemistry'].shift();
+                else if (buckets['Biology'].length > 0) task = buckets['Biology'].shift();
+            }
+
+            // 3. Add task (if found)
+            if (task) {
+                selectedBatch.push(task);
+                currentPoints += task.points;
+            } else {
+                break; // No tasks left anywhere
+            }
+
+            // 4. Advance pattern
+            patternIdx++;
         }
 
-        // Save for the button
         currentAiSuggestions[trackName] = selectedBatch;
 
-        // 5. GENERATE PREVIEW
+        // D. RENDER
         const previewMap = selectedBatch.reduce((acc, item) => {
             let n = item.subject.substring(0,3); 
-            if(item.subject === 'Chemistry') n = item.points >= 3 ? 'Org/Phys' : 'Inorg';
+            // Add visual cue for Hard topics
+            if (item.points >= 5) n += '🔥'; 
             acc[n] = (acc[n] || 0) + 1;
             return acc;
         }, {});
 
         return {
-            name: trackName === 'main' ? 'Smart Gap Fill' : 'Backlog Gap Fill',
+            name: trackName === 'main' ? 'Smart Mix' : 'Backlog Mix',
             days: daysLeft,
             dailyCount: selectedBatch.length,
             points: currentPoints,
-            manualPoints: manualPoints, // Pass this to show off intelligence
+            manualPoints: manualPoints,
             color: colorTheme,
             trackId: trackName,
             preview: previewMap
@@ -2245,11 +2310,14 @@ window.checkStudyPace = function() {
         const border = isV ? 'border-violet-200 dark:border-violet-800' : 'border-orange-200 dark:border-orange-800';
         const textMain = isV ? 'text-violet-700 dark:text-violet-300' : 'text-orange-700 dark:text-orange-300';
         const btnBg = isV ? 'bg-violet-600 hover:bg-violet-700' : 'bg-orange-600 hover:bg-orange-700';
-        const mixText = Object.entries(stats.preview).map(([k,v]) => `${k}: ${v}`).join(', ');
+        
+        // Format preview text
+        const mixText = Object.entries(stats.preview)
+            .map(([k,v]) => `<span class="font-bold">${k}</span>×${v}`)
+            .join(' <span class="text-slate-300 mx-1">|</span> ');
 
-        // Smart Message: "You planned X, we suggest Y more"
         const smartMessage = stats.manualPoints > 0 
-            ? `<span class="text-[10px] font-bold opacity-70 block mt-1">(You planned ${stats.manualPoints} pts manually. Adding ${stats.points} more.)</span>` 
+            ? `<span class="text-[10px] font-bold opacity-70 block mt-1">(Including your planned ${stats.manualPoints} pts)</span>` 
             : '';
 
         return `
@@ -2262,15 +2330,15 @@ window.checkStudyPace = function() {
                         <span class="text-xs font-bold text-slate-400">${stats.days} Days Left</span>
                     </div>
                     <h3 class="text-lg font-bold text-slate-800 dark:text-white">
-                        Recommended: <span class="${textMain}">${stats.points} Points</span>
+                        Generate Daily Target
                         ${smartMessage}
                     </h3>
-                    <div class="flex items-center gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-${stats.color}-100 dark:border-${stats.color}-900/30 w-fit">
-                        <i data-lucide="layers" class="w-3 h-3"></i><span>${mixText}</span>
+                    <div class="flex items-center gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium bg-white/60 dark:bg-black/20 px-3 py-2 rounded-lg border border-${stats.color}-100 dark:border-${stats.color}-900/30 w-fit backdrop-blur-sm">
+                        <i data-lucide="layers" class="w-3.5 h-3.5 ${textMain}"></i><span>${mixText}</span>
                     </div>
                 </div>
                 <button onclick="acceptAiPlan('${stats.trackId}')" class="w-full md:w-auto px-6 py-3 ${btnBg} text-white rounded-xl text-sm font-bold shadow-lg shadow-${stats.color}-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Accept Mission
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Add to Plan
                 </button>
             </div>
         </div>`;
@@ -2289,7 +2357,6 @@ window.checkStudyPace = function() {
     container.innerHTML = html;
     if (window.lucide) lucide.createIcons({ root: container });
 };
-
 
 
 window.acceptAiPlan = function(track) {
@@ -3605,3 +3672,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 });
+
