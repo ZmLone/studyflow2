@@ -932,15 +932,7 @@ const backlogPlan = {
        // PART 2: CLASS 11 REVISION (New Section)
        // =========================================
 
-       { 
-           subject: "Physics", 
-           topic: "Wave Motion (Class 11)", 
-           dailyTests: [
-               {name:"DT-49 (Phy-XI)", subs:["Transverse Waves", "Longitudinal Waves"]},
-               {name:"DT-50 (Phy-XI)", subs:["Speed of Travelling Wave"]},
-               {name:"DT-51 (Phy-XI)", subs:["Superposition Principle", "Reflection of Waves", "Beats"]}
-           ] 
-       },
+    
        { 
            subject: "Chemistry", 
            topic: "GOC: General Organic Chem", 
@@ -3611,4 +3603,5 @@ document.addEventListener('DOMContentLoaded', () => {
         snowActive = false;
         updateSnowUI();
     }
+
 });
