@@ -389,9 +389,9 @@ const mainSchedule = [
                subject: "Chemistry",
                topic: "p-Block Elements (Group 15-18)",
                dailyTests: [
-                   {name:"DT-10 (Chem-XII)", subs:["Nitrogen Family (Grp 15)", "Ammonia & Nitric Acid"]},
-                   {name:"DT-11 (Chem-XII)", subs:["Oxygen Family (Grp 16)", "Sulphuric Acid"]},
-                   {name:"DT-12 (Chem-XII)", subs:["Halogens (Grp 17)", "Noble Gases (Grp 18)"]}
+                   {name:"DT-10 (Chem-XII)", subs:["Nitrogen Family (Grp 15)", "Oxides of Nitrogen", "Phosphorus Allotropic Forms", "Oxides of Phosphorus"]},
+                   {name:"DT-11 (Chem-XII)", subs:["Oxygen Family (Grp 16)", "Oxides of Oxygen", "Sulphur Allotropic Forms" , "Oxoacids of Sulphur", "Oxides of Nitrogen"]},
+                   {name:"DT-12 (Chem-XII)", subs:["Halogens (Grp 17)", "Oxoacids of Halogens", "Noble Gases (Grp 18)"]}
                ]
            },
            {
@@ -837,8 +837,8 @@ const mainSchedule = [
 ];
 
 const backlogPlan = {
-   name: "Backlog & Revision", 
-   date: new Date('2026-02-03T00:00:00'), // Updated to Feb 3
+   name: "Backlog & Revision", // Renamed to reflect mixed content
+   date: new Date('2026-02-01T00:00:00'), // Your Target Date (Feb 1)
    syllabus: [
        // =========================================
        // PART 1: AIATS-5 PENDING (Chem/Bio Only)
@@ -932,15 +932,15 @@ const backlogPlan = {
        // PART 2: CLASS 11 REVISION (New Section)
        // =========================================
 
-       { 
+              { 
            subject: "Chemistry", 
            topic: "GOC: General Organic Chem", 
            dailyTests: [
                {name:"DT-23 (Chem-XI)", subs:["IUPAC Nomenclature"]},
-               {name:"DT-24 (Chem-XI)", subs:["Nucleophiles & Electrophiles"]}, // Removed Isomerism
+               {name:"DT-24 (Chem-XI)", subs:["Nucleophiles & Electrophiles"]},
                {name:"DT-25 (Chem-XI)", subs:["Inductive Effect", "Resonance", "Hyperconjugation"]},
                {name:"DT-26 (Chem-XI)", subs:["Carbocation", "Carbanion", "Free Radicals"]}
-               // DT-27 Removed (Purification/Qualitative)
+              
            ] 
        }
    ]
@@ -2125,19 +2125,17 @@ window.checkStudyPace = function() {
         if (subject === 'Physics') return 4;
         if (subject === 'Chemistry') {
             const t = (topic || '').toLowerCase();
-            // High cognitive load Chemistry topics
             if (t.includes('organic') || t.includes('hydro') || t.includes('halo') || 
                 t.includes('alcohol') || t.includes('aldehyde') || t.includes('amine') || 
-                t.includes('thermo') || t.includes('equilibrium') || t.includes('electro') ||
-                t.includes('kinetics')) {
+                t.includes('thermo') || t.includes('equilibrium') || t.includes('electro')) {
                 return 3;
             }
             return 2;
         }
-        return 1; // Botany/Zoology (Lighter load)
+        return 1; // Botany/Zoology
     }
 
-    // --- ENGINE: The "Fatigue-Buster" Algorithm ---
+    // --- ENGINE: The "Gap Filler" Algorithm ---
     function generateSmartMix(trackName, syllabusData, deadlineDate, colorTheme) {
         if (!deadlineDate) return null;
 
@@ -2146,16 +2144,18 @@ window.checkStudyPace = function() {
         if (trackName === 'main') rawDays = rawDays > 0 ? rawDays - 1 : 0;
         const daysLeft = Math.max(1, rawDays);
 
-        // 1. CALCULATE TOTAL REMAINING WORK
+        // 1. CALCULATE TOTAL REMAINING WORK (Backlog + Future)
         let allPending = [];
         let totalRemainingPoints = 0;
 
         syllabusData.forEach(chapter => {
             chapter.dailyTests.forEach(dt => {
+                // Only include if NOT done 
                 if (!state.dailyTestsAttempted[dt.name]) {
                     const pts = getWeight(chapter.subject, chapter.topic);
                     
-                    // Check if already planned
+                    // CHECK: Is this specific sub-task ALREADY in today's planner?
+                    // We check if ANY sub-topic of this test is planned
                     const isAlreadyPlanned = dt.subs.some(sub => 
                         todaysTasks.some(t => t.text === `Study: ${chapter.topic} - ${sub}`)
                     );
@@ -2173,75 +2173,46 @@ window.checkStudyPace = function() {
             });
         });
 
-        if (allPending.length === 0) return null;
+        if (allPending.length === 0) return null; // Nothing left!
 
         // 2. CALCULATE "ALREADY PLANNED" SCORE
+        // This is the "Intelligence" part. We sum up points of tasks you manually added.
         let manualPoints = 0;
         todaysTasks.forEach(t => {
+            // Only count tasks that match this track (Main vs Backlog)
             if (t.type === trackName) {
+                // Try to infer weight from the text or subject
                 let subject = t.subject;
                 let topic = t.chapter || '';
                 if (!topic && t.text.includes(' - ')) topic = t.text.split(' - ')[0].replace('Study: ', '');
+                
                 manualPoints += getWeight(subject, topic);
             }
         });
 
-        // 3. CALCULATE THE GAP
+        // 3. CALCULATE THE GAP (Target - Manual)
         const bufferMultiplier = daysLeft < 5 ? 1.25 : 1.15;
         const rawDailyTarget = Math.ceil((totalRemainingPoints / daysLeft) * bufferMultiplier);
+        
+        // The Magic: Subtract what you've already done/planned
         let neededPoints = rawDailyTarget - manualPoints;
 
+        // If you've already planned MORE than the target, don't suggest anything!
         if (neededPoints <= 0) return null; 
 
-        // 4. FILL THE GAP (The New Logic)
-        
-        // Split tasks into "Heavy" (High Focus) and "Light" (Relief)
-        // Heavy = Physics (4) and Hard Chem (3)
-        // Light = Easy Chem (2) and Bio (1)
-        let heavyTasks = allPending.filter(t => t.points >= 3).sort((a, b) => b.points - a.points);
-        let lightTasks = allPending.filter(t => t.points < 3).sort((a, b) => b.points - a.points);
-        
+        // 4. FILL THE GAP (Greedy Sort)
+        allPending.sort((a, b) => b.points - a.points); // Hardest first
+
         let selectedBatch = [];
         let currentPoints = 0;
-        let lastSubject = null;
 
-        // Loop until we meet the point requirement
-        while (currentPoints < neededPoints) {
-            let nextTask = null;
-
-            // STRATEGY: 
-            // 1. If we just added a Heavy task, try to force a Light task (Subject Switch) to prevent fatigue.
-            // 2. Otherwise, default to Heavy to ensure "Majorly Difficult" topics are prioritized.
-            
-            const justDidHeavy = selectedBatch.length > 0 && selectedBatch[selectedBatch.length - 1].points >= 3;
-            
-            if (justDidHeavy && lightTasks.length > 0) {
-                // Try to find a light task from a DIFFERENT subject than the last one
-                nextTask = lightTasks.find(t => t.subject !== lastSubject) || lightTasks[0];
-                // Remove from pool
-                lightTasks = lightTasks.filter(t => t !== nextTask);
-            } 
-            else if (heavyTasks.length > 0) {
-                // Priority: Heavy Tasks
-                nextTask = heavyTasks[0];
-                heavyTasks.shift();
-            } 
-            else if (lightTasks.length > 0) {
-                // Fallback: Light Tasks if no Heavy left
-                nextTask = lightTasks[0];
-                lightTasks.shift();
-            } 
-            else {
-                break; // No tasks left in syllabus
-            }
-
-            if (nextTask) {
-                selectedBatch.push(nextTask);
-                currentPoints += nextTask.points;
-                lastSubject = nextTask.subject;
-            }
+        for (const task of allPending) {
+            if (currentPoints >= neededPoints) break;
+            selectedBatch.push(task);
+            currentPoints += task.points;
         }
 
+        // Save for the button
         currentAiSuggestions[trackName] = selectedBatch;
 
         // 5. GENERATE PREVIEW
@@ -2257,7 +2228,7 @@ window.checkStudyPace = function() {
             days: daysLeft,
             dailyCount: selectedBatch.length,
             points: currentPoints,
-            manualPoints: manualPoints,
+            manualPoints: manualPoints, // Pass this to show off intelligence
             color: colorTheme,
             trackId: trackName,
             preview: previewMap
@@ -2275,6 +2246,7 @@ window.checkStudyPace = function() {
         const btnBg = isV ? 'bg-violet-600 hover:bg-violet-700' : 'bg-orange-600 hover:bg-orange-700';
         const mixText = Object.entries(stats.preview).map(([k,v]) => `${k}: ${v}`).join(', ');
 
+        // Smart Message: "You planned X, we suggest Y more"
         const smartMessage = stats.manualPoints > 0 
             ? `<span class="text-[10px] font-bold opacity-70 block mt-1">(You planned ${stats.manualPoints} pts manually. Adding ${stats.points} more.)</span>` 
             : '';
@@ -3630,7 +3602,4 @@ document.addEventListener('DOMContentLoaded', () => {
         snowActive = false;
         updateSnowUI();
     }
-
 });
-
-
