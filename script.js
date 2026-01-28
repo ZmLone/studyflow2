@@ -1810,57 +1810,44 @@ function renderDailyHadith() {
 
  window.switchView = function(view) {
     state.activeView = view;
-    // We removed toggleMobileMenu() because the sidebar is gone!
+    toggleMobileMenu(true); 
+    
+    // Handle specific view logic
+    if(view === 'leaderboard') {
+        fetchLeaderboard();
+        switchRankTab('overall'); 
+    }
+    if(view === 'namaz') {
+        renderNamazView();
+    }
+    // NEW: Handle Planner View
+    if(view === 'planner') {
+        renderPlanner();
+    }
+    // Reset Notebook if leaving mistakes view
+    if(view === 'mistakes') {
+        closeNotebook(); 
+    }
 
-    // View Specific Logic
-    if(view === 'leaderboard') { fetchLeaderboard(); switchRankTab('overall'); }
-    if(view === 'namaz') renderNamazView();
-    if(view === 'planner') renderPlanner();
-    if(view === 'mistakes') closeNotebook(); 
-
-    // Define colors for active state
-    const colors = {
-        overview: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20',
-        target: 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20',
-        backlog: 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20',
-        planner: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20',
-        mistakes: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20',
-        leaderboard: 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20',
-        namaz: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20',
-    };
-
-    // UPDATE DOCK BUTTONS
+    // Updated list to include 'planner'
     ['overview','target','backlog', 'mistakes', 'leaderboard', 'namaz', 'planner'].forEach(v => {
-        const btn = document.getElementById(`dock-${v}`);
+        const btn = document.getElementById(`nav-${v}`);
         if(btn) {
-            const iconDiv = btn.querySelector('div');
-            const icon = btn.querySelector('i');
-            const label = btn.querySelector('span');
-            
-            if(v === view) {
-                // ACTIVE STATE
-                iconDiv.className = `mb-1 p-1.5 rounded-xl transition-all -translate-y-2 shadow-sm ${colors[v] || 'bg-slate-100'}`;
-                icon.className = `w-6 h-6 transition-colors ${colors[v].split(' ')[0]}`; // Get just the text color class
-                label.className = "text-[10px] font-bold text-slate-800 dark:text-white opacity-100";
-            } else {
-                // INACTIVE STATE
-                iconDiv.className = "mb-1 p-1.5 rounded-xl transition-all bg-transparent group-hover:-translate-y-1";
-                icon.className = "w-6 h-6 text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300 transition-colors";
-                label.className = "text-[10px] font-bold text-slate-400 opacity-80 group-hover:opacity-100";
-            }
+            if(v === view) btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 shadow-sm";
+            else btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all";
         }
-
-        // Toggle View Containers
         const viewEl = document.getElementById(`view-${v}`);
-        if(viewEl) {
-            if(v === view) viewEl.classList.remove('hidden');
-            else viewEl.classList.add('hidden');
-        }
+        if(viewEl) viewEl.classList.add('hidden');
     });
 
-    // Refresh components
+    const activeEl = document.getElementById(`view-${view}`);
+    if(activeEl) activeEl.classList.remove('hidden');
+    
+    // Only render standard views if NOT leaderboard or planner (Planner handles its own render)
     if(view !== 'leaderboard' && view !== 'planner') renderAll();
 };
+
+
 
         window.toggleMobileMenu = function(forceClose = false) {
             const body = document.getElementById('app-body');
