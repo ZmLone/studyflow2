@@ -835,134 +835,294 @@ const mainSchedule = [
        syllabus: [ { subject: "General", topic: "Full Syllabus NEET Pattern", dailyTests: [{name:"Mock-8", subs:["Complete Physics", "Complete Chemistry", "Complete Biology"]}] } ]
    }
 ];
-// --- REPLACED BACKLOG PLAN (Granular & Dated) ---
+// --- REPLACED BACKLOG PLAN (Complete 60-Day Schedule: Jan 29 - Mar 30) ---
 const backlogPlan = {
-   name: "60-Day Recovery",
-   startDate: new Date('2026-01-29T00:00:00'), // Starts Tomorrow!
-   date: new Date('2026-03-30T00:00:00'), 
-   syllabus: [
-       // =========================================
-       // PHASE 1: Jan 29 - Feb 12 (15 Days)
-       // =========================================
-       
-       // PHYSICS (Unit: Oscillations & Waves)
-       {
-           phase: 1, unit: "Oscillations & Waves", subject: "Physics", topic: "Oscillations (SHM)",
-           dailyTests: [
-               {name:"DT-46 (Phy-XI)", subs:["SHM Equation", "Uniform Circular Motion"]},
-               {name:"DT-47 (Phy-XI)", subs:["Energy in SHM", "Force Law"]},
-               {name:"DT-48 (Phy-XI)", subs:["Simple Pendulum", "Spring Systems"]}
-           ]
-       },
-       {
-           phase: 1, unit: "Oscillations & Waves", subject: "Physics", topic: "Waves",
-           dailyTests: [
-               {name:"DT-49 (Phy-XI)", subs:["Transverse & Longitudinal Waves"]},
-               {name:"DT-50 (Phy-XI)", subs:["Speed of Travelling Wave"]},
-               {name:"DT-51 (Phy-XI)", subs:["Superposition", "Beats", "Doppler"]}
-           ]
-       },
+    name: "60-Day Recovery",
+    startDate: new Date('2026-01-29T00:00:00'), // Starts Jan 29
+    date: new Date('2026-03-30T00:00:00'),      // Ends Mar 30
+    syllabus: [
+        // =========================================
+        // PHASE 1: Jan 29 - Feb 12 (15 Days)
+        // Focus: Rhythmic Chapters & High Weightage
+        // =========================================
+        
+        // --- PHYSICS (Oscillations & Waves) ---
+        {
+            phase: 1, unit: "Oscillations & Waves", subject: "Physics", topic: "Oscillations (SHM)",
+            dailyTests: [
+                {name:"DT-46 (Phy-XI)", subs:["SHM Equation & Characteristics", "Uniform Circular Motion"]},
+                {name:"DT-47 (Phy-XI)", subs:["Energy in SHM (Kinetic/Potential)", "Force Law"]},
+                {name:"DT-48 (Phy-XI)", subs:["Simple Pendulum", "Spring-Mass Systems"]}
+            ]
+        },
+        {
+            phase: 1, unit: "Oscillations & Waves", subject: "Physics", topic: "Waves",
+            dailyTests: [
+                {name:"DT-49 (Phy-XI)", subs:["Transverse & Longitudinal Waves", "Speed of Wave"]},
+                {name:"DT-50 (Phy-XI)", subs:["Superposition Principle", "Reflection of Waves"]},
+                {name:"DT-51 (Phy-XI)", subs:["Beats & Standing Waves", "Doppler Effect", "Organ Pipes"]}
+            ]
+        },
 
-       // BIOLOGY (Unit: Cell Structure)
-       {
-           phase: 1, unit: "Cell Structure & Function", subject: "Biology", topic: "Cell: The Unit of Life",
-           dailyTests: [
-               {name:"DT-1 (Bot-XI)", subs:["Cell Theory", "Prokaryotic Cells"]},
-               {name:"DT-2 (Bot-XI)", subs:["Eukaryotic Cells: Membrane & Wall"]},
-               {name:"DT-3 (Bot-XI)", subs:["Endomembrane System", "Mitochondria"]},
-               {name:"DT-4 (Bot-XI)", subs:["Plastids", "Ribosomes", "Cytoskeleton"]},
-               {name:"DT-5 (Bot-XI)", subs:["Nucleus", "Chromosomes"]}
-           ]
-       },
-       // Note: Add Biomolecules/Cell Cycle here if you have their DT numbers
+        // --- BIOLOGY (Cell Unit) ---
+        {
+            phase: 1, unit: "Cell Structure", subject: "Biology", topic: "Cell: The Unit of Life",
+            dailyTests: [
+                {name:"DT-1 (Bot-XI)", subs:["Cell Theory", "Prokaryotic Cells"]},
+                {name:"DT-2 (Bot-XI)", subs:["Eukaryotic Cells: Cell Membrane & Wall"]},
+                {name:"DT-3 (Bot-XI)", subs:["Endomembrane System", "Mitochondria & Plastids"]},
+                {name:"DT-4 (Bot-XI)", subs:["Ribosomes, Cytoskeleton", "Cilia & Flagella"]},
+                {name:"DT-5 (Bot-XI)", subs:["Nucleus & Chromosomes"]}
+            ]
+        },
+        {
+            phase: 1, unit: "Cell Structure", subject: "Biology", topic: "Biomolecules",
+            dailyTests: [
+                {name:"DT-10 (Zoo-XI)", subs:["Carbohydrates & Lipids", "Amino Acids & Proteins"]},
+                {name:"DT-11 (Zoo-XI)", subs:["Nucleic Acids (DNA/RNA)", "Enzymes: Properties & Action"]}
+            ]
+        },
+        {
+            phase: 1, unit: "Cell Structure", subject: "Biology", topic: "Cell Cycle & Division",
+            dailyTests: [
+                {name:"DT-6 (Bot-XI)", subs:["Cell Cycle Phases (G1, S, G2)", "Mitosis"]},
+                {name:"DT-7 (Bot-XI)", subs:["Meiosis I & II", "Significance of Division"]}
+            ]
+        },
 
-       // CHEMISTRY (Unit: Structure of Atom)
-       {
-           phase: 1, unit: "Atomic Structure", subject: "Chemistry", topic: "Structure of Atom",
-           dailyTests: [
-               {name:"DT-4 (Chem-XI)", subs:["Sub-atomic particles", "Atomic Models"]},
-               {name:"DT-5 (Chem-XI)", subs:["Dual Nature", "Heisenberg Uncertainty"]},
-               {name:"DT-6 (Chem-XI)", subs:["Quantum Numbers", "Electronic Config"]}
-           ]
-       },
+        // --- CHEMISTRY (Atom & Redox) ---
+        {
+            phase: 1, unit: "Atomic Structure", subject: "Chemistry", topic: "Structure of Atom",
+            dailyTests: [
+                {name:"DT-4 (Chem-XI)", subs:["Sub-atomic particles", "Bohr's Model"]},
+                {name:"DT-5 (Chem-XI)", subs:["Dual Nature of Matter", "Heisenberg Uncertainty"]},
+                {name:"DT-6 (Chem-XI)", subs:["Quantum Numbers", "Electronic Configuration Rules"]}
+            ]
+        },
+        {
+            phase: 1, unit: "Physical Chem", subject: "Chemistry", topic: "Redox Reactions",
+            dailyTests: [
+                {name:"DT-19 (Chem-XI)", subs:["Oxidation Number Concept", "Balancing Redox Reactions"]}
+            ]
+        },
 
-       // =========================================
-       // PHASE 2: Feb 13 - Feb 27 (15 Days)
-       // =========================================
-       
-       // PHYSICS (Unit: Bulk Matter)
-       {
-           phase: 2, unit: "Properties of Bulk Matter", subject: "Physics", topic: "Solids & Fluids",
-           dailyTests: [
-               {name:"DT-33 (Phy-XI)", subs:["Elasticity", "Stress-Strain Curve"]},
-               {name:"DT-34 (Phy-XI)", subs:["Fluid Pascal's Law", "Archimedes"]},
-               {name:"DT-35 (Phy-XI)", subs:["Bernoulli's Principle", "Viscosity"]},
-               {name:"DT-36 (Phy-XI)", subs:["Surface Tension"]}
-           ]
-       },
-       {
-           phase: 2, unit: "Properties of Bulk Matter", subject: "Physics", topic: "Thermal Properties",
-           dailyTests: [
-               {name:"DT-37 (Phy-XI)", subs:["Thermal Expansion", "Calorimetry", "Heat Transfer"]}
-           ]
-       },
+        // =========================================
+        // PHASE 2: Feb 13 - Feb 27 (15 Days)
+        // Focus: Bulk Matter, Diversity & Periodic Table
+        // =========================================
+        
+        // --- PHYSICS (Properties of Matter) ---
+        {
+            phase: 2, unit: "Bulk Matter", subject: "Physics", topic: "Solids & Fluids",
+            dailyTests: [
+                {name:"DT-33 (Phy-XI)", subs:["Elasticity: Stress-Strain Curve", "Young's Modulus"]},
+                {name:"DT-34 (Phy-XI)", subs:["Fluids: Pascal's Law", "Archimedes Principle"]},
+                {name:"DT-35 (Phy-XI)", subs:["Fluids: Bernoulli's Principle", "Viscosity & Stoke's Law"]},
+                {name:"DT-36 (Phy-XI)", subs:["Surface Tension", "Capillarity"]}
+            ]
+        },
+        {
+            phase: 2, unit: "Bulk Matter", subject: "Physics", topic: "Thermal Properties",
+            dailyTests: [
+                {name:"DT-37 (Phy-XI)", subs:["Thermal Expansion", "Calorimetry"]},
+                {name:"DT-38 (Phy-XI)", subs:["Heat Transfer (Conduction/Convection/Radiation)", "Newton's Law of Cooling"]}
+            ]
+        },
 
-       // BIOLOGY (Unit: Diversity)
-       {
-           phase: 2, unit: "Diversity in Living World", subject: "Biology", topic: "The Living World",
-           dailyTests: [{name:"DT-6 (Bot-XI)", subs:["Taxonomic Categories", "Tools"]}]
-       },
-       {
-           phase: 2, unit: "Diversity in Living World", subject: "Biology", topic: "Biological Classification",
-           dailyTests: [
-               {name:"DT-7 (Bot-XI)", subs:["Monera", "Protista"]},
-               {name:"DT-8 (Bot-XI)", subs:["Fungi", "Viruses"]}
-           ]
-       },
-       {
-           phase: 2, unit: "Diversity in Living World", subject: "Biology", topic: "Plant Kingdom",
-           dailyTests: [
-               {name:"DT-9 (Bot-XI)", subs:["Algae", "Bryophytes"]},
-               {name:"DT-10 (Bot-XI)", subs:["Pteridophytes", "Gymno/Angiosperms"]}
-           ]
-       },
+        // --- BIOLOGY (Diversity & Structural Org) ---
+        {
+            phase: 2, unit: "Diversity", subject: "Biology", topic: "The Living World & Classification",
+            dailyTests: [
+                {name:"DT-1 (Bot-XI-Rev)", subs:["Taxonomic Categories", "Tools & Aids"]},
+                {name:"DT-2 (Bot-XI-Rev)", subs:["Monera & Protista", "Fungi & Viruses"]}
+            ]
+        },
+        {
+            phase: 2, unit: "Diversity", subject: "Biology", topic: "Plant Kingdom",
+            dailyTests: [
+                {name:"DT-3 (Bot-XI-Rev)", subs:["Algae & Bryophytes"]},
+                {name:"DT-4 (Bot-XI-Rev)", subs:["Pteridophytes & Gymnosperms", "Angiosperms Life Cycle"]}
+            ]
+        },
+        {
+            phase: 2, unit: "Diversity", subject: "Biology", topic: "Animal Kingdom",
+            dailyTests: [
+                {name:"DT-1 (Zoo-XI)", subs:["Basis of Classification", "Porifera to Platyhelminthes"]},
+                {name:"DT-2 (Zoo-XI)", subs:["Aschelminthes to Arthropoda"]},
+                {name:"DT-3 (Zoo-XI)", subs:["Mollusca to Hemichordata"]},
+                {name:"DT-4 (Zoo-XI)", subs:["Chordata: Pisces to Mammalia"]}
+            ]
+        },
+        {
+            phase: 2, unit: "Structural Org", subject: "Biology", topic: "Morphology & Anatomy",
+            dailyTests: [
+                {name:"DT-5 (Bot-XI-Rev)", subs:["Root, Stem, Leaf Modifications"]},
+                {name:"DT-6 (Bot-XI-Rev)", subs:["Inflorescence & Flower Parts", "New Families (Malvaceae, etc)"]},
+                {name:"DT-7 (Bot-XI-Rev)", subs:["Anatomy: Tissues System", "Secondary Growth"]}
+            ]
+        },
 
-       // CHEMISTRY (Unit: Periodic Table)
-       {
-           phase: 2, unit: "Classification of Elements", subject: "Chemistry", topic: "Periodic Table",
-           dailyTests: [
-               {name:"DT-7 (Chem-XI)", subs:["Modern Periodic Law", "Nomenclature"]},
-               {name:"DT-8 (Chem-XI)", subs:["Trends: Radius, Ionization"]},
-               {name:"DT-9 (Chem-XI)", subs:["Trends: Electronegativity"]}
-           ]
-       },
+        // --- CHEMISTRY (Periodic Table) ---
+        {
+            phase: 2, unit: "Inorganic", subject: "Chemistry", topic: "Classification of Elements",
+            dailyTests: [
+                {name:"DT-7 (Chem-XI)", subs:["Modern Periodic Law", "IUPAC >100"]},
+                {name:"DT-8 (Chem-XI)", subs:["Trends: Atomic Radius", "Ionization Enthalpy"]},
+                {name:"DT-9 (Chem-XI)", subs:["Trends: Electron Gain Enthalpy", "Electronegativity"]}
+            ]
+        },
 
-       // =========================================
-       // PHASE 3: Feb 28 - Mar 14 (15 Days)
-       // =========================================
-       {
-           phase: 3, unit: "Mechanics I", subject: "Physics", topic: "Kinematics",
-           dailyTests: [{name:"DT-7 (Phy-XI)", subs:["Kinematics Graphs (v-t, x-t)"]}]
-       },
-       {
-           phase: 3, unit: "Mechanics I", subject: "Physics", topic: "Laws of Motion",
-           dailyTests: [
-               {name:"DT-13 (Phy-XI)", subs:["Newton's Laws", "Momentum"]},
-               {name:"DT-14 (Phy-XI)", subs:["Friction", "Circular Motion"]}
-           ]
-       },
-       {
-           phase: 3, unit: "Chemical Bonding", subject: "Chemistry", topic: "Chemical Bonding",
-           dailyTests: [
-               {name:"DT-10 (Chem-XI)", subs:["Ionic Bond", "Lattice Enthalpy"]},
-               {name:"DT-11 (Chem-XI)", subs:["VSEPR Theory", "Hybridisation"]},
-               {name:"DT-12 (Chem-XI)", subs:["MOT (Molecular Orbital Theory)"]}
-           ]
-       },
-       // (Add Phase 4 similarly following this pattern)
-   ]
+        // =========================================
+        // PHASE 3: Feb 28 - Mar 14 (15 Days)
+        // Focus: Mechanics Core, Bonding, Plant Phys
+        // =========================================
+
+        // --- PHYSICS (Mechanics Part 1) ---
+        {
+            phase: 3, unit: "Mechanics I", subject: "Physics", topic: "Kinematics",
+            dailyTests: [
+                {name:"DT-3 (Phy-XI)", subs:["Motion 1D: v-t, x-t Graphs"]},
+                {name:"DT-4 (Phy-XI)", subs:["Motion 2D: Projectile Motion"]},
+                {name:"DT-5 (Phy-XI)", subs:["Relative Velocity", "River-Boat Problems"]}
+            ]
+        },
+        {
+            phase: 3, unit: "Mechanics I", subject: "Physics", topic: "Laws of Motion",
+            dailyTests: [
+                {name:"DT-13 (Phy-XI)", subs:["Newton's Laws", "Conservation of Momentum"]},
+                {name:"DT-14 (Phy-XI)", subs:["Friction: Static & Kinetic"]},
+                {name:"DT-15 (Phy-XI)", subs:["Circular Motion Dynamics"]}
+            ]
+        },
+        {
+            phase: 3, unit: "Mechanics I", subject: "Physics", topic: "Work, Energy & Power",
+            dailyTests: [
+                {name:"DT-16 (Phy-XI)", subs:["Work Done by Constant/Variable Force"]},
+                {name:"DT-17 (Phy-XI)", subs:["Work-Energy Theorem", "Potential Energy"]},
+                {name:"DT-18 (Phy-XI)", subs:["Collisions (Elastic/Inelastic)"]}
+            ]
+        },
+
+        // --- CHEMISTRY (Bonding & GOC) ---
+        {
+            phase: 3, unit: "Physical/Inorg", subject: "Chemistry", topic: "Chemical Bonding",
+            dailyTests: [
+                {name:"DT-10 (Chem-XI)", subs:["Ionic Bond & Lattice Energy", "Covalent Bond"]},
+                {name:"DT-11 (Chem-XI)", subs:["VSEPR Theory", "Hybridisation (sp, sp2, sp3)"]},
+                {name:"DT-12 (Chem-XI)", subs:["MOT (Molecular Orbital Theory)", "Hydrogen Bonding"]}
+            ]
+        },
+        {
+            phase: 3, unit: "Organic", subject: "Chemistry", topic: "GOC (General Organic Chem)",
+            dailyTests: [
+                {name:"DT-23 (Chem-XI)", subs:["IUPAC Nomenclature"]},
+                {name:"DT-24 (Chem-XI)", subs:["Electronic Effects: Inductive, Resonance"]},
+                {name:"DT-25 (Chem-XI)", subs:["Hyperconjugation", "Carbocation Stability"]},
+                {name:"DT-26 (Chem-XI)", subs:["Isomerism (Structural & Stereo)"]}
+            ]
+        },
+
+        // --- BIOLOGY (Plant Physiology) ---
+        {
+            phase: 3, unit: "Plant Phys", subject: "Biology", topic: "Photosynthesis",
+            dailyTests: [
+                {name:"DT-12 (Bot-XI)", subs:["Early Experiments", "Light Reaction (Z-Scheme)"]},
+                {name:"DT-13 (Bot-XI)", subs:["Dark Reaction: C3 & C4 Cycles", "Photorespiration"]}
+            ]
+        },
+        {
+            phase: 3, unit: "Plant Phys", subject: "Biology", topic: "Respiration in Plants",
+            dailyTests: [
+                {name:"DT-14 (Bot-XI)", subs:["Glycolysis", "Fermentation"]},
+                {name:"DT-15 (Bot-XI)", subs:["Krebs Cycle", "ETS & Oxidative Phosphorylation"]}
+            ]
+        },
+        {
+            phase: 3, unit: "Plant Phys", subject: "Biology", topic: "Plant Growth & Dev",
+            dailyTests: [
+                {name:"DT-16 (Bot-XI)", subs:["Growth Rates", "Auxins & Gibberellins"]},
+                {name:"DT-17 (Bot-XI)", subs:["Cytokinins, Ethylene, ABA", "Photoperiodism"]}
+            ]
+        },
+
+        // =========================================
+        // PHASE 4: Mar 15 - Mar 30 (15 Days)
+        // Focus: Rotation, Gravity, Thermo, Human Phys
+        // =========================================
+
+        // --- PHYSICS (Mechanics II) ---
+        {
+            phase: 4, unit: "Mechanics II", subject: "Physics", topic: "System of Particles (Rotation)",
+            dailyTests: [
+                {name:"DT-22 (Phy-XI)", subs:["Centre of Mass"]},
+                {name:"DT-23 (Phy-XI)", subs:["Torque & Angular Momentum"]},
+                {name:"DT-24 (Phy-XI)", subs:["Moment of Inertia Theorems"]},
+                {name:"DT-25 (Phy-XI)", subs:["Rolling Motion"]}
+            ]
+        },
+        {
+            phase: 4, unit: "Mechanics II", subject: "Physics", topic: "Gravitation",
+            dailyTests: [
+                {name:"DT-28 (Phy-XI)", subs:["Kepler's Laws", "Acceleration due to Gravity (g)"]},
+                {name:"DT-29 (Phy-XI)", subs:["Gravitational Potential Energy", "Satellites & Escape Velocity"]}
+            ]
+        },
+
+        // --- CHEMISTRY (Thermo & Eq) ---
+        {
+            phase: 4, unit: "Physical Chem", subject: "Chemistry", topic: "Thermodynamics",
+            dailyTests: [
+                {name:"DT-14 (Chem-XI)", subs:["First Law", "Enthalpy & Internal Energy"]},
+                {name:"DT-15 (Chem-XI)", subs:["Entropy", "Gibbs Free Energy & Spontaneity"]}
+            ]
+        },
+        {
+            phase: 4, unit: "Physical Chem", subject: "Chemistry", topic: "Equilibrium",
+            dailyTests: [
+                {name:"DT-16 (Chem-XI)", subs:["Chemical Eq: Kp, Kc, Le Chatelier"]},
+                {name:"DT-17 (Chem-XI)", subs:["Ionic Eq: pH, Acids & Bases"]},
+                {name:"DT-18 (Chem-XI)", subs:["Buffer Solutions", "Solubility Product (Ksp)"]}
+            ]
+        },
+
+        // --- BIOLOGY (Human Physiology) ---
+        {
+            phase: 4, unit: "Human Phys", subject: "Biology", topic: "Breathing & Exchange",
+            dailyTests: [
+                {name:"DT-17 (Zoo-XI)", subs:["Respiratory Organs", "Mechanism of Breathing"]},
+                {name:"DT-18 (Zoo-XI)", subs:["Transport of Gases", "Regulation of Respiration"]}
+            ]
+        },
+        {
+            phase: 4, unit: "Human Phys", subject: "Biology", topic: "Body Fluids & Circulation",
+            dailyTests: [
+                {name:"DT-19 (Zoo-XI)", subs:["Blood & Lymph", "Human Heart Structure"]},
+                {name:"DT-20 (Zoo-XI)", subs:["Cardiac Cycle", "ECG & Disorders"]}
+            ]
+        },
+        {
+            phase: 4, unit: "Human Phys", subject: "Biology", topic: "Excretory Products",
+            dailyTests: [
+                {name:"DT-21 (Zoo-XI)", subs:["Human Excretory System", "Urine Formation"]},
+                {name:"DT-22 (Zoo-XI)", subs:["Counter Current Mechanism", "Regulation of Kidney"]}
+            ]
+        },
+        {
+            phase: 4, unit: "Human Phys", subject: "Biology", topic: "Neural Control",
+            dailyTests: [
+                {name:"DT-25 (Zoo-XI)", subs:["Neuron & Nerve Impulse", "Synaptic Transmission"]},
+                {name:"DT-26 (Zoo-XI)", subs:["Central Neural System (Brain)", "Reflex Action"]}
+            ]
+        },
+        {
+            phase: 4, unit: "Human Phys", subject: "Biology", topic: "Chemical Coordination",
+            dailyTests: [
+                {name:"DT-27 (Zoo-XI)", subs:["Hypothalamus & Pituitary Hormones"]},
+                {name:"DT-28 (Zoo-XI)", subs:["Thyroid, Adrenal, Pancreas", "Mechanism of Hormone Action"]}
+            ]
+        }
+    ]
 };
-
 
         // --- STATE MODIFICATION: USE REAL DATE ---
         const state = {
