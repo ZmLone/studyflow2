@@ -181,29 +181,27 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             initLocalMode();
         };
 
-        // --- DARK MODE LOGIC ---
-        window.toggleTheme = function() {
-            const html = document.documentElement;
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                localStorage.setItem('theme', 'light');
-                document.getElementById('theme-text').textContent = 'Light Mode';
-            } else {
-                html.classList.add('dark');
-                localStorage.setItem('theme', 'dark');
-                document.getElementById('theme-text').textContent = 'Dark Mode';
-            }
-        };
+// --- DARK MODE LOGIC ---
+window.toggleTheme = function() {
+    const html = document.documentElement;
+    if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        // Removed 'theme-text' update since the element doesn't exist
+    } else {
+        html.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        // Removed 'theme-text' update
+    }
+};
 
-        // Initialize Theme (Default to Dark)
-        if (localStorage.theme === 'light') {
-            document.documentElement.classList.remove('dark');
-            document.getElementById('theme-text').textContent = 'Light Mode';
-        } else {
-            // Default path
-            document.documentElement.classList.add('dark');
-            document.getElementById('theme-text').textContent = 'Dark Mode';
-        }
+// Initialize Theme (Default to Dark)
+if (localStorage.theme === 'light') {
+    document.documentElement.classList.remove('dark');
+} else {
+    document.documentElement.classList.add('dark');
+}
+
 
         // --- DATA ---
 const mainSchedule = [
@@ -353,80 +351,6 @@ const mainSchedule = [
                    {name:"DT-43 (Zoo-XI)", subs:["Cockroach: Nervous System", "Cockroach: Reproductive System", "Cockroach: Excretory System"]},
                    {name:"DT-44 (Zoo-XI)", subs:["Frog: Morphology", "Frog: Anatomy (All Systems)"]}
                ] 
-           }
-       ]
-   },
-
-   // --- UT-10 (FEB 1) ---
-   {
-       name: "UT-10",
-       date: new Date('2026-02-01T00:00:00'),
-       syllabus: [
-           {
-               subject: "Physics",
-               topic: "Wave Optics",
-               dailyTests: [
-                   {name:"DT-31 (Phy-XII)", subs:["Huygens Principle", "Interference (Young's Experiment)"]},
-                   {name:"DT-32 (Phy-XII)", subs:["Diffraction", "Polarization"]}
-               ]
-           },
-           {
-               subject: "Physics",
-               topic: "Dual Nature of Matter",
-               dailyTests: [
-                   {name:"DT-33 (Phy-XII)", subs:["Photoelectric Effect"]},
-                   {name:"DT-34 (Phy-XII)", subs:["Wave Nature of Matter", "Davisson Germer Experiment"]}
-               ]
-           },
-           {
-               subject: "Physics",
-               topic: "Atoms",
-               dailyTests: [
-                   {name:"DT-35 (Phy-XII)", subs:["Bohr Model", "Hydrogen Spectrum"]}
-               ]
-           },
-           {
-               subject: "Chemistry",
-               topic: "p-Block Elements (Group 15-18)",
-               dailyTests: [
-                   {name:"DT-10 (Chem-XII)", subs:["Nitrogen Family (Grp 15)", "Oxides of Nitrogen", "Phosphorus Allotropic Forms", "Oxides of Phosphorus"]},
-                   {name:"DT-11 (Chem-XII)", subs:["Oxygen Family (Grp 16)", "Oxides of Oxygen", "Sulphur Allotropic Forms" , "Oxoacids of Sulphur", "Oxides of Nitrogen"]},
-                   {name:"DT-12 (Chem-XII)", subs:["Halogens (Grp 17)", "Oxoacids of Halogens", "Noble Gases (Grp 18)"]}
-               ]
-           },
-           {
-               subject: "Chemistry",
-               topic: "Practical Chemistry",
-               dailyTests: [
-                   {name:"Rev (Chem-XII)", subs:["Principles of Practical Chemistry"]}
-               ]
-           },
-           {
-               subject: "Botany",
-               topic: "Biodiversity & Conservation",
-               dailyTests: [
-                   {name:"DT-21 (Bot-XII)", subs:["Biodiversity Patterns"]},
-                   {name:"DT-22 (Bot-XII)", subs:["Loss of Biodiversity", "Conservation Strategies"]}
-               ]
-           },
-           {
-               subject: "Zoology",
-               topic: "Biotech: Applications",
-               dailyTests: [
-                   {name:"DT-23 (Zoo-XII)", subs:["Biotech in Agriculture", "Bt Cotton"]},
-                   {name:"DT-24 (Zoo-XII)", subs:["Biotech in Medicine", "Insulin", "Gene Therapy"]}
-               ]
-           },
-           {
-               subject: "Zoology",
-               topic: "Evolution",
-               dailyTests: [
-                   {name:"DT-10 (Zoo-XII)", subs:["Origin of Life", "Miller's Experiment"]},
-                   {name:"DT-11 (Zoo-XII)", subs:["Evidences of Evolution"]},
-                   {name:"DT-12 (Zoo-XII)", subs:["Hardy Weinberg Principle", "Natural Selection"]},
-                   {name:"DT-13 (Zoo-XII)", subs:["Speciation"]},
-                   {name:"DT-14 (Zoo-XII)", subs:["Human Evolution"]}
-               ]
            }
        ]
    },
@@ -1282,7 +1206,7 @@ window.updateProfileUI = function(user) {
     const updateElements = (prefix) => {
         const card = document.getElementById(`${prefix}-user-card`);
         const avatarBg = document.getElementById(`${prefix}-user-avatar-bg`);
-        const avatarText = document.getElementById(`${prefix}-user-avatar-text`);
+        // Removed avatarText because new design puts text directly in avatarBg
         const nameEl = document.getElementById(`${prefix}-user-name`);
         const statusEl = document.getElementById(`${prefix}-sync-status`);
         const btn = document.getElementById(`${prefix}-auth-btn`);
@@ -1294,7 +1218,10 @@ window.updateProfileUI = function(user) {
         }
         
         avatarBg.className = `flex items-center justify-center font-bold shadow-sm transition-colors ${prefix === 'mobile' ? 'w-10 h-10 rounded-full text-sm' : 'w-9 h-9 rounded-xl text-xs'} ${currentStyle.avatarBg}`;
-        avatarText.textContent = isGuest ? "?" : initial;
+        
+        // FIX: Set text directly on the background element
+        avatarBg.textContent = isGuest ? "?" : initial;
+        
         nameEl.textContent = name;
         
         statusEl.innerHTML = isGuest 
@@ -1309,7 +1236,6 @@ window.updateProfileUI = function(user) {
             btn.className = `${prefix === 'mobile' ? 'p-2' : 'p-1.5'} rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all`;
         }
     };
-
     updateElements('mobile');
     updateElements('desktop');
     if(window.lucide) lucide.createIcons();
@@ -2359,11 +2285,9 @@ window.renderLeaderboardList = function() {
         renderHeader(); 
     };
 
-// --- NEW: SMART WEIGHTED LOAD BALANCER ---
+// --- NEW: UNIFIED SMART MIX (LOAD BALANCER) ---
+let currentUnifiedSuggestion = [];
 
-let currentAiSuggestions = { main: [], backlog: [] };
-
-// --- INTELLIGENT GAP-FILLING SMART MIX ---
 window.checkStudyPace = function() {
     const container = document.getElementById('ai-strategy-container');
     if (!container) return;
@@ -2376,257 +2300,230 @@ window.checkStudyPace = function() {
     const k = formatDateKey(state.selectedDate);
     const todaysTasks = state.tasks[k] || [];
 
-    // HELPER: Calculate Weight of any Subject/Topic
+    // 1. HELPER: Weight Calculator
     function getWeight(subject, topic) {
-        if (subject === 'Physics') return 4;
+        if (subject === 'Physics') return 4; // High Priority
         if (subject === 'Chemistry') {
             const t = (topic || '').toLowerCase();
+            // Organic & Physical get higher weight
             if (t.includes('organic') || t.includes('hydro') || t.includes('halo') || 
                 t.includes('alcohol') || t.includes('aldehyde') || t.includes('amine') || 
                 t.includes('thermo') || t.includes('equilibrium') || t.includes('electro')) {
                 return 3;
             }
-            return 2;
+            return 2; // Inorganic
         }
-        return 1; // Botany/Zoology
+        return 1; // Biology (Volume-based)
     }
 
-    // --- ENGINE: The "Gap Filler" Algorithm (Phase-Aware) ---
-    function generateSmartMix(trackName, syllabusData, deadlineDate, colorTheme) {
-        
-        // --- NEW: PHASE DETECTION LOGIC ---
-        let activePhase = 0; // Default (All)
-        let phaseDeadline = deadlineDate;
-        let phaseName = "";
+    // 2. HELPER: Calculate Work Debt for a Track
+    function calculateTrackMetrics(syllabus, deadlineDate, trackType) {
+        if (!syllabus || !deadlineDate) return { pending: [], rate: 0, days: 1 };
 
-        // Only calculate phases for Backlog track
-        if(trackName === 'backlog') {
+        // A. Adjust Deadline Logic
+        let effectiveDeadline = new Date(deadlineDate);
+        if (trackType === 'main') {
+            // Main Exam: Finish 1 day EARLY (Buffer)
+            effectiveDeadline.setDate(effectiveDeadline.getDate() - 1);
+        } else {
+            // Backlog: Finish ON deadline (Phase Logic)
             const planStart = backlogPlan.startDate || new Date();
-            const now = new Date();
-            const dayDiff = Math.ceil((now - planStart) / (1000 * 60 * 60 * 24));
+            const diff = Math.ceil((new Date() - planStart) / (1000 * 60 * 60 * 24));
+            let currentPhase = 1;
+            if(diff > 15) currentPhase = 2;
+            if(diff > 30) currentPhase = 3;
+            if(diff > 45) currentPhase = 4;
             
-            // Determine Phase based on Day 1-60 timeline
-            if(dayDiff <= 15) { 
-                activePhase = 1; 
-                phaseName = "Phase 1"; 
-                // Set deadline to end of this phase
-                phaseDeadline = new Date(planStart.getTime() + 15*24*60*60*1000); 
-            }
-            else if(dayDiff <= 30) { 
-                activePhase = 2; 
-                phaseName = "Phase 2"; 
-                phaseDeadline = new Date(planStart.getTime() + 30*24*60*60*1000); 
-            }
-            else if(dayDiff <= 45) { 
-                activePhase = 3; 
-                phaseName = "Phase 3"; 
-                phaseDeadline = new Date(planStart.getTime() + 45*24*60*60*1000); 
-            }
-            else { 
-                activePhase = 4; 
-                phaseName = "Phase 4"; 
-                phaseDeadline = new Date(planStart.getTime() + 60*24*60*60*1000); 
-            }
+            // Set deadline to end of current phase
+            effectiveDeadline = new Date(planStart);
+            effectiveDeadline.setDate(planStart.getDate() + (currentPhase * 15));
         }
-        // ----------------------------------
 
-        if (!phaseDeadline) return null;
+        // B. Days Remaining
+        let daysLeft = Math.ceil((effectiveDeadline - today) / (1000 * 60 * 60 * 24));
+        if (daysLeft < 1) daysLeft = 1; // Avoid division by zero
 
-        const dDate = new Date(phaseDeadline);
-        let rawDays = Math.ceil((dDate - today) / (1000 * 60 * 60 * 24));
-        const daysLeft = Math.max(1, rawDays);
+        // C. Gather Pending Tasks (Phase Filtered for Backlog)
+        let totalPoints = 0;
+        let pendingTasks = [];
 
-        // 1. CALCULATE REMAINING WORK (Filtered by Phase)
-        let allPending = [];
-        let totalRemainingPoints = 0;
-
-        syllabusData.forEach(chapter => {
-            // NEW: Filter by Phase if applicable
-            if(activePhase > 0 && chapter.phase !== activePhase) return;
+        syllabus.forEach(chapter => {
+            // Backlog Phase Filter
+            if (trackType === 'backlog') {
+                const planStart = backlogPlan.startDate || new Date();
+                const diff = Math.ceil((new Date() - planStart) / (1000 * 60 * 60 * 24));
+                let phase = 1;
+                if(diff > 15) phase = 2;
+                if(diff > 30) phase = 3;
+                if(diff > 45) phase = 4;
+                
+                if (chapter.phase && chapter.phase !== phase) return;
+            }
 
             chapter.dailyTests.forEach(dt => {
                 if (!state.dailyTestsAttempted[dt.name]) {
-                    const pts = getWeight(chapter.subject, chapter.topic);
-                    
-                    const isAlreadyPlanned = dt.subs.some(sub => 
+                    // Check if already planned manually today
+                    const isPlanned = dt.subs.some(sub => 
                         todaysTasks.some(t => t.text === `Study: ${chapter.topic} - ${sub}`)
                     );
 
-                    if (!isAlreadyPlanned) {
-                        allPending.push({
+                    if (!isPlanned) {
+                        const w = getWeight(chapter.subject, chapter.topic);
+                        pendingTasks.push({
                             name: dt.name,
                             subject: chapter.subject,
                             topic: chapter.topic,
-                            points: pts
+                            points: w,
+                            track: trackType,
+                            subs: dt.subs
                         });
-                        totalRemainingPoints += pts;
+                        totalPoints += w;
                     }
                 }
             });
         });
 
-        if (allPending.length === 0) return null; 
-
-        // 2. CALCULATE "ALREADY PLANNED" (Filtered by Phase)
-        let manualPoints = 0;
-        todaysTasks.forEach(t => {
-            if (t.type === trackName) {
-                let subject = t.subject;
-                // ... inside generateSmartMix loop ...
-let topic = t.chapter || '';
-if (!topic && t.text.includes(' - ')) topic = t.text.split(' - ')[0].replace('Study: ', '');
-
-// This is the CRITICAL line that auto-calculates points
-// It checks if the Manual Task matches any chapter in the ACTIVE Phase
-const isCurrentPhase = syllabusData.some(c => c.topic === topic && (activePhase === 0 || c.phase === activePhase));
-
-if(isCurrentPhase) manualPoints += getWeight(subject, topic);
-// ...
-            }
-        });
-
-        // 3. CALCULATE THE GAP
-        const bufferMultiplier = daysLeft < 5 ? 1.25 : 1.15;
-        const rawDailyTarget = Math.ceil((totalRemainingPoints / daysLeft) * bufferMultiplier);
-        let neededPoints = rawDailyTarget - manualPoints;
-
-        if (neededPoints <= 0) return null; 
-
-        // 4. FILL THE GAP
-        allPending.sort((a, b) => b.points - a.points); 
-        let selectedBatch = [];
-        let currentPoints = 0;
-
-        for (const task of allPending) {
-            if (currentPoints >= neededPoints) break;
-            selectedBatch.push(task);
-            currentPoints += task.points;
-        }
-
-        currentAiSuggestions[trackName] = selectedBatch;
-
-        const previewMap = selectedBatch.reduce((acc, item) => {
-            let n = item.subject.substring(0,3); 
-            if(item.subject === 'Chemistry') n = item.points >= 3 ? 'Org/Phys' : 'Inorg';
-            acc[n] = (acc[n] || 0) + 1;
-            return acc;
-        }, {});
-
-        // Display Name adjustment for UI
-        const displayName = trackName === 'main' ? 'Smart Gap Fill' : `${phaseName} Booster`;
-
-        return {
-            name: displayName,
-            days: daysLeft,
-            dailyCount: selectedBatch.length,
-            points: currentPoints,
-            manualPoints: manualPoints,
-            color: colorTheme,
-            trackId: trackName,
-            preview: previewMap
-        };
+        // D. Required Daily Rate
+        const dailyRate = totalPoints / daysLeft;
+        
+        return { pending: pendingTasks, rate: dailyRate, days: daysLeft };
     }
-   
 
-    // --- RENDER UI ---
-    let html = '';
+    // --- MAIN LOGIC ---
     
-    const renderCard = (stats) => {
-        const isV = stats.color === 'violet';
-        const bg = isV ? 'bg-violet-50 dark:bg-violet-900/10' : 'bg-orange-50 dark:bg-orange-900/10';
-        const border = isV ? 'border-violet-200 dark:border-violet-800' : 'border-orange-200 dark:border-orange-800';
-        const textMain = isV ? 'text-violet-700 dark:text-violet-300' : 'text-orange-700 dark:text-orange-300';
-        const btnBg = isV ? 'bg-violet-600 hover:bg-violet-700' : 'bg-orange-600 hover:bg-orange-700';
-        const mixText = Object.entries(stats.preview).map(([k,v]) => `${k}: ${v}`).join(', ');
+    // 3. Analyze Both Tracks
+    const mainMetrics = calculateTrackMetrics(state.nextExam.syllabus, state.nextExam.date, 'main');
+    const backlogMetrics = typeof backlogPlan !== 'undefined' ? 
+        calculateTrackMetrics(backlogPlan.syllabus, backlogPlan.date, 'backlog') : 
+        { pending: [], rate: 0 };
 
-        // Smart Message: "You planned X, we suggest Y more"
-        const smartMessage = stats.manualPoints > 0 
-            ? `<span class="text-[10px] font-bold opacity-70 block mt-1">(You planned ${stats.manualPoints} pts manually. Adding ${stats.points} more.)</span>` 
-            : '';
+    // 4. Calculate Combined Burden
+    const totalDailyRate = Math.ceil(mainMetrics.rate + backlogMetrics.rate);
+    
+    // 5. Calculate "Already Done" Points (Manual Additions)
+    let manualPoints = 0;
+    todaysTasks.forEach(t => {
+        // Approximate points for manual tasks based on subject
+        manualPoints += getWeight(t.subject, t.chapter);
+    });
 
-        return `
-        <div class="${bg} border ${border} rounded-2xl p-5 relative overflow-hidden group shadow-sm mb-4 animate-in slide-in-from-top-2 duration-500">
-            <div class="absolute -right-6 -top-6 ${textMain} opacity-10 transform rotate-12"><i data-lucide="brain-circuit" class="w-32 h-32"></i></div>
-            <div class="relative z-10 flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div>
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isV ? 'bg-violet-100 dark:bg-violet-900' : 'bg-orange-100 dark:bg-orange-900'} ${textMain} tracking-wide flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> ${stats.name}</span>
-                        <span class="text-xs font-bold text-slate-400">${stats.days} Days Left</span>
+    // 6. The "Gap" (How much more is needed?)
+    const deficit = totalDailyRate - manualPoints;
+
+    // If user has already planned enough, don't show the card
+    if (deficit <= 0 || (mainMetrics.pending.length === 0 && backlogMetrics.pending.length === 0)) return;
+
+    // 7. GENERATE BALANCED SUGGESTIONS
+    // We split the deficit proportionally based on the needs of each track
+    const mainShare = mainMetrics.rate / (mainMetrics.rate + backlogMetrics.rate || 1);
+    
+    let pointsForMain = Math.round(deficit * mainShare);
+    let pointsForBacklog = deficit - pointsForMain;
+
+    // Fetch highest value tasks first
+    mainMetrics.pending.sort((a,b) => b.points - a.points);
+    backlogMetrics.pending.sort((a,b) => b.points - a.points);
+
+    let suggestions = [];
+    let currentFill = 0;
+
+    // Fill Main Quota
+    for (let task of mainMetrics.pending) {
+        if (currentFill >= pointsForMain) break;
+        suggestions.push(task);
+        currentFill += task.points;
+    }
+    
+    // Fill Backlog Quota
+    currentFill = 0;
+    for (let task of backlogMetrics.pending) {
+        if (currentFill >= pointsForBacklog) break;
+        suggestions.push(task);
+        currentFill += task.points;
+    }
+
+    currentUnifiedSuggestion = suggestions;
+
+    // 8. RENDER THE UNIFIED CARD
+    if (suggestions.length > 0) {
+        const totalPoints = suggestions.reduce((sum, t) => sum + t.points, 0);
+        const mainCount = suggestions.filter(t => t.track === 'main').length;
+        const backlogCount = suggestions.filter(t => t.track === 'backlog').length;
+
+        const html = `
+        <div class="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-slate-900 dark:to-slate-900 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-5 relative overflow-hidden shadow-sm mb-6 animate-in slide-in-from-top-2">
+            <div class="absolute -right-6 -top-6 text-indigo-500 opacity-5 transform rotate-12">
+                <i data-lucide="scale" class="w-40 h-40"></i>
+            </div>
+
+            <div class="relative z-10 flex flex-col md:flex-row gap-6 items-center justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 tracking-wide flex items-center gap-1">
+                            <i data-lucide="brain-circuit" class="w-3 h-3"></i> Balanced Mix
+                        </span>
+                        <span class="text-xs font-medium text-slate-500">Based on your velocity</span>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-800 dark:text-white">
-                        Recommended: <span class="${textMain}">${stats.points} Points</span>
-                        ${smartMessage}
+                    
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight">
+                        Today's Optimal Load: <span class="text-indigo-600 dark:text-indigo-400">${totalPoints} Points</span>
                     </h3>
-                    <div class="flex items-center gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-${stats.color}-100 dark:border-${stats.color}-900/30 w-fit">
-                        <i data-lucide="layers" class="w-3 h-3"></i><span>${mixText}</span>
+                    
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Calculated to finish <strong class="text-slate-700 dark:text-slate-300">Main 1 day early</strong> & <strong class="text-slate-700 dark:text-slate-300">Backlog on time</strong>.
+                    </p>
+
+                    <div class="flex items-center gap-3 mt-3">
+                        <div class="flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20 px-2 py-1 rounded-lg border border-brand-100 dark:border-brand-900/50">
+                            <i data-lucide="zap" class="w-3 h-3"></i> ${mainCount} Exam Topics
+                        </div>
+                        <div class="flex items-center gap-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-lg border border-orange-100 dark:border-orange-900/50">
+                            <i data-lucide="history" class="w-3 h-3"></i> ${backlogCount} Backlog Topics
+                        </div>
                     </div>
                 </div>
-                <button onclick="acceptAiPlan('${stats.trackId}')" class="w-full md:w-auto px-6 py-3 ${btnBg} text-white rounded-xl text-sm font-bold shadow-lg shadow-${stats.color}-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Accept Mission
+
+                <button onclick="acceptUnifiedPlan()" class="w-full md:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Accept Daily Mix
                 </button>
             </div>
         </div>`;
-    };
 
-    if (state.nextExam && state.nextExam.syllabus) {
-        const mainStats = generateSmartMix('main', state.nextExam.syllabus, state.nextExam.date, 'violet');
-        if (mainStats) html += renderCard(mainStats);
+        container.innerHTML = html;
+        if (window.lucide) lucide.createIcons({ root: container });
     }
-    
-    if (typeof backlogPlan !== 'undefined' && backlogPlan.syllabus) {
-        const backlogStats = generateSmartMix('backlog', backlogPlan.syllabus, backlogPlan.date, 'orange');
-        if (backlogStats) html += renderCard(backlogStats);
-    }
-
-    container.innerHTML = html;
-    if (window.lucide) lucide.createIcons({ root: container });
 };
 
-
-
-window.acceptAiPlan = function(track) {
-    const suggestions = currentAiSuggestions[track];
-    if (!suggestions || suggestions.length === 0) return;
+window.acceptUnifiedPlan = function() {
+    if (!currentUnifiedSuggestion || currentUnifiedSuggestion.length === 0) return;
 
     let addedCount = 0;
     const key = formatDateKey(state.selectedDate);
 
-    suggestions.forEach(item => {
-        // Find the full test data from the syllabus to get all sub-topics
-        const sourceData = track === 'main' ? state.nextExam.syllabus : backlogPlan.syllabus;
-        const chapter = sourceData.find(c => c.topic === item.topic);
-        const testData = chapter?.dailyTests.find(dt => dt.name === item.name);
-
-        if (testData) {
-            testData.subs.forEach(sub => {
-                const taskText = `Study: ${item.topic} - ${sub}`;
-                // Only add if the task isn't already on today's list
-                const exists = (state.tasks[key] || []).some(t => t.text === taskText);
-                
-                if (!exists) {
-                    addTask(taskText, track, item.subject, item.topic);
-                    addedCount++;
-                }
-            });
-        }
+    currentUnifiedSuggestion.forEach(item => {
+        item.subs.forEach(sub => {
+            const taskText = `Study: ${item.topic} - ${sub}`;
+            // Check dupes
+            const exists = (state.tasks[key] || []).some(t => t.text === taskText);
+            
+            if (!exists) {
+                addTask(taskText, item.track, item.subject, item.topic);
+                addedCount++;
+            }
+        });
     });
 
-    // Save and Refresh
     saveData();
     renderAll();
 
-    // Feedback
+    // Celebration
     if (window.confetti) {
-        confetti({ 
-            particleCount: 100, 
-            spread: 50, 
-            origin: { y: 0.8 },
-            colors: track === 'main' ? ['#8b5cf6'] : ['#f97316']
-        });
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#6366f1', '#f97316'] });
     }
-
-    showToast(`📚 Added ${addedCount} sub-topics to your mission. Complete them to unlock the Daily Tests!`);
+    
+    showToast(`🚀 Balanced Plan Activated! Added ${addedCount} topics to your list.`);
 };
+
 // --- PLANNER FUNCTIONS ---
 
 
@@ -3920,4 +3817,16 @@ document.addEventListener('DOMContentLoaded', () => {
         snowActive = false;
         updateSnowUI();
     }
+});
+
+// --- OPTIONAL: ADVANCED FLUID PHYSICS ---
+document.addEventListener('mousemove', (e) => {
+    // Parallax Effect
+    const layers = document.querySelectorAll('.blob');
+    layers.forEach((layer, index) => {
+        const speed = (index + 1) * 0.05;
+        const x = (window.innerWidth - e.pageX * speed) / 100;
+        const y = (window.innerHeight - e.pageY * speed) / 100;
+        layer.style.transform = `translateX(${x}px) translateY(${y}px)`;
+    });
 });
