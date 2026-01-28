@@ -2289,6 +2289,7 @@ window.renderLeaderboardList = function() {
 // --- NEW: VIBRANT BALANCED MIX CARD ---
 let currentUnifiedSuggestion = [];
 
+
 window.checkStudyPace = function() {
     const container = document.getElementById('ai-strategy-container');
     if (!container) return;
@@ -2301,7 +2302,7 @@ window.checkStudyPace = function() {
     const k = formatDateKey(state.selectedDate);
     const todaysTasks = state.tasks[k] || [];
     
-    // HISTORY CHECK (Granular Fix)
+    // HISTORY CHECK
     const allCompleted = new Set();
     Object.values(state.tasks).flat().forEach(t => { if (t.completed) allCompleted.add(t.text); });
 
@@ -2351,10 +2352,6 @@ window.checkStudyPace = function() {
             }
 
             chapter.dailyTests.forEach(dt => {
-                // REMOVED: if (state.dailyTestsAttempted[dt.name]) return;
-                // REASON: Allow re-suggesting sub-topics even if test was attempted, 
-                // provided the specific sub-topic is not in 'allCompleted' (deleted).
-                
                 const remainingSubs = dt.subs.filter(sub => !allCompleted.has(`Study: ${chapter.topic} - ${sub}`));
                 if (remainingSubs.length === 0) return;
 
@@ -2386,9 +2383,11 @@ window.checkStudyPace = function() {
     const backlogMetrics = typeof backlogPlan !== 'undefined' ? 
         calculateTrackMetrics(backlogPlan.syllabus, backlogPlan.date, 'backlog') : { pending: [], rate: 0 };
 
-    const totalDailyRate = Math.ceil((mainMetrics.rate + backlogMetrics.rate) * 1.1);
+    // FIX 1: INCREASED AGGRESSION (1.1 -> 1.25)
+    // This raises the "Minimum Daily Target" so even small deletions trigger the AI.
+    const totalDailyRate = Math.ceil((mainMetrics.rate + backlogMetrics.rate) * 1.25);
     
-    // FIX: Calculate ALL points (completed or not) so deleting a task immediately drops the score
+    // FIX 2: COUNT ALL PLANNED TASKS (Correctly handles deletes)
     let manualPoints = 0;
     todaysTasks.forEach(t => { 
         manualPoints += getWeight(t.subject, t.chapter); 
@@ -2396,12 +2395,20 @@ window.checkStudyPace = function() {
 
     const deficit = totalDailyRate - manualPoints;
     
-    // If deficit is positive, we show suggestions
+    // Only return if we have truly met the (now higher) target
     if (deficit <= 0 || (mainMetrics.pending.length === 0 && backlogMetrics.pending.length === 0)) return;
 
     const mainShare = mainMetrics.rate / (mainMetrics.rate + backlogMetrics.rate || 1);
     let pointsForMain = deficit * mainShare;
     let pointsForBacklog = deficit - pointsForMain;
+
+    // FIX 3: FORCE BACKLOG INCLUSION
+    // If we have backlog pending, ensure we allocate at least 2 points to it
+    // This prevents the "Physics (4pt)" tasks from eating the entire suggestion budget.
+    if (backlogMetrics.pending.length > 0 && pointsForBacklog < 2) {
+        pointsForBacklog = 2; // Force at least 2 points for backlog
+        pointsForMain = Math.max(0, deficit - pointsForBacklog); // Adjust main down
+    }
 
     mainMetrics.pending.sort((a,b) => b.rawPoints - a.rawPoints);
     backlogMetrics.pending.sort((a,b) => b.rawPoints - a.rawPoints);
@@ -2474,7 +2481,6 @@ window.checkStudyPace = function() {
         if (window.lucide) lucide.createIcons({ root: container });
     }
 };
-
 window.acceptUnifiedPlan = function() {
     if (!currentUnifiedSuggestion || currentUnifiedSuggestion.length === 0) return;
 
