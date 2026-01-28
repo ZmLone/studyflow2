@@ -2351,7 +2351,10 @@ window.checkStudyPace = function() {
             }
 
             chapter.dailyTests.forEach(dt => {
-                if (state.dailyTestsAttempted[dt.name]) return;
+                // REMOVED: if (state.dailyTestsAttempted[dt.name]) return;
+                // REASON: Allow re-suggesting sub-topics even if test was attempted, 
+                // provided the specific sub-topic is not in 'allCompleted' (deleted).
+                
                 const remainingSubs = dt.subs.filter(sub => !allCompleted.has(`Study: ${chapter.topic} - ${sub}`));
                 if (remainingSubs.length === 0) return;
 
@@ -2385,14 +2388,15 @@ window.checkStudyPace = function() {
 
     const totalDailyRate = Math.ceil((mainMetrics.rate + backlogMetrics.rate) * 1.1);
     
-    // 5. Calculate "Already Planned Today" Points
+    // FIX: Calculate ALL points (completed or not) so deleting a task immediately drops the score
     let manualPoints = 0;
     todaysTasks.forEach(t => { 
-        // Count ALL tasks (Done or Not) so deleting one immediately affects the AI calculation
         manualPoints += getWeight(t.subject, t.chapter); 
     });
 
     const deficit = totalDailyRate - manualPoints;
+    
+    // If deficit is positive, we show suggestions
     if (deficit <= 0 || (mainMetrics.pending.length === 0 && backlogMetrics.pending.length === 0)) return;
 
     const mainShare = mainMetrics.rate / (mainMetrics.rate + backlogMetrics.rate || 1);
@@ -2424,7 +2428,6 @@ window.checkStudyPace = function() {
         const mainCount = suggestions.filter(t => t.track === 'main').length;
         const backlogCount = suggestions.filter(t => t.track === 'backlog').length;
 
-        // NEW DESIGN HTML
         const html = `
         <div class="relative overflow-hidden rounded-[2rem] p-6 bg-gradient-to-r from-blue-600 to-cyan-500 shadow-xl shadow-blue-500/20 text-white mb-6 group animate-in slide-in-from-top-2">
             <div class="absolute -right-10 -top-10 text-white opacity-10 group-hover:rotate-12 transition-transform duration-700">
@@ -2471,6 +2474,7 @@ window.checkStudyPace = function() {
         if (window.lucide) lucide.createIcons({ root: container });
     }
 };
+
 window.acceptUnifiedPlan = function() {
     if (!currentUnifiedSuggestion || currentUnifiedSuggestion.length === 0) return;
 
