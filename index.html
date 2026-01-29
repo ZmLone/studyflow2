@@ -360,8 +360,22 @@
 </header>
 
             <div class="flex-1 overflow-y-auto custom-scroll p-4 md:p-8 relative z-10">
+
+<div id="smart-mix-alert" class="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/50 p-4 rounded-2xl flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+    <div class="flex items-center gap-3 text-orange-700 dark:text-orange-400">
+        <i data-lucide="alert-circle" class="w-5 h-5 shrink-0"></i>
+        <p class="text-xs font-bold leading-tight">
+            The Smart Mix is currently facing technical errors. Please study on your own and manually track your backlog for now.
+        </p>
+    </div>
+    <button onclick="this.parentElement.remove()" class="text-orange-400 hover:text-orange-600 p-1">
+        <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+</div>
+
                 <div class="max-w-5xl mx-auto space-y-6">
-                    
+                 
+  
                     <div id="stats-container" class="mb-6"></div>
 <div id="ai-strategy-container" class="hidden mb-6"></div>
                     <div>
