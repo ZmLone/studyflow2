@@ -46,12 +46,11 @@
 .slide-out-to-bottom-4 { animation-name: slideDown; }
 /* ✅ FORCE GLOBAL SCROLLING */
 /* This disables internal scrollbars so the main page scrolls naturally */
-#view-overview, #view-target, #view-backlog, #view-mistakes, #view-leaderboard, #view-namaz {
+#view-overview, #view-target, #view-backlog, #view-mistakes, #view-leaderboard, #view-namaz, #view-points {
     overflow: visible !important;
     height: auto !important;
-    display: none; /* Default hidden, JS toggles flex/block */
+    display: none;
 }
-
 /* Override utility classes to prevent double scrollbars */
 .custom-scroll {
     overflow: visible !important;
@@ -65,7 +64,8 @@
 #view-backlog:not(.hidden), 
 #view-mistakes:not(.hidden), 
 #view-leaderboard:not(.hidden), 
-#view-namaz:not(.hidden) {
+#view-namaz:not(.hidden),
+#view-points:not(.hidden) {
     display: flex !important;
     flex-direction: column;
 }
