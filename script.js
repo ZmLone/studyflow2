@@ -2957,26 +2957,26 @@ window.renderHeader = function() {
     if (state.activeView === 'overview') {
         const isToday = formatDateKey(state.selectedDate) === formatDateKey(new Date());
         
-        // Format: "Jan 30" or "Today"
         const dateDisplay = isToday 
             ? `<span class="font-extrabold text-brand-600 dark:text-brand-400">Today</span>` 
-            : state.selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            : state.selectedDate.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }); // Removed Month on tiny screens if needed, but 'short' is usually fine.
 
         container.innerHTML = `
-            <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm animate-in fade-in zoom-in duration-200">
-                <button onclick="changeDay(-1)" class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-all active:scale-90" aria-label="Previous Day">
-                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-lg md:rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <button onclick="changeDay(-1)" class="p-1 md:p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md text-slate-500 dark:text-slate-400 active:scale-90">
+                    <i data-lucide="chevron-left" class="w-3 h-3 md:w-4 md:h-4"></i>
                 </button>
                 
-                <button onclick="goToToday()" class="px-3 py-1 text-xs font-bold text-slate-700 dark:text-slate-200 min-w-[80px] text-center active:scale-95 transition-transform" title="Jump to Today">
+                <button onclick="goToToday()" class="px-2 md:px-3 py-0.5 text-[10px] md:text-xs font-bold text-slate-700 dark:text-slate-200 min-w-[60px] md:min-w-[80px] text-center">
                     ${dateDisplay}
                 </button>
 
-                <button onclick="changeDay(1)" class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-all active:scale-90" aria-label="Next Day">
-                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <button onclick="changeDay(1)" class="p-1 md:p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md text-slate-500 dark:text-slate-400 active:scale-90">
+                    <i data-lucide="chevron-right" class="w-3 h-3 md:w-4 md:h-4"></i>
                 </button>
             </div>
         `;
+    }        `;
     } 
     // 2. OTHER VIEWS: Show Page Title
     else {
@@ -3014,6 +3014,7 @@ window.renderHeaderPrayerWidget = function() {
     const k = formatDateKey(state.selectedDate);
     const todayData = state.prayers[k] || {};
     
+    // Short labels for mobile (F, D, A...)
     const prayers = [
         { key: 'Fajr', label: 'F' },
         { key: 'Dhuhr', label: 'D' },
@@ -3025,15 +3026,20 @@ window.renderHeaderPrayerWidget = function() {
     container.innerHTML = prayers.map(p => {
         const isDone = todayData[p.key] === true;
         
-        let baseClass = "flex-1 md:flex-none h-9 w-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-xs font-bold transition-all duration-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm";
+        // RESPONSIVE DESIGN MAGIC:
+        // Mobile: w-6 h-7 (Tiny vertical pills)
+        // Desktop: md:w-9 md:h-9 (Comfortable squares)
+        let sizeClass = "w-6 h-7 md:w-9 md:h-9 text-[10px] md:text-xs";
+        
+        let baseClass = `${sizeClass} rounded-md md:rounded-xl flex items-center justify-center font-bold transition-all duration-200 border shadow-sm select-none`;
         
         let stateClass = isDone 
-            ? "bg-emerald-500 text-white !border-emerald-500 shadow-md shadow-emerald-500/30 scale-105" 
-            : "text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 hover:border-brand-300 dark:hover:border-brand-700";
+            ? "bg-emerald-500 text-white border-emerald-600 shadow-emerald-500/20 scale-105" 
+            : "bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-600 hover:text-brand-600";
 
         return `
-            <button onclick="togglePrayer('${p.key}')" class="${baseClass} ${stateClass}" title="Mark ${p.key} as done">
-                ${isDone ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : p.label}
+            <button onclick="togglePrayer('${p.key}')" class="${baseClass} ${stateClass}" aria-label="${p.key}">
+                ${isDone ? '<i data-lucide="check" class="w-3 h-3 md:w-4 md:h-4"></i>' : p.label}
             </button>
         `;
     }).join('');
