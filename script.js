@@ -1261,12 +1261,45 @@ window.handleAuthAction = function(e) {
     if (!currentUser || currentUser.isAnonymous) document.getElementById('auth-modal').classList.remove('hidden');
     else handleLogout();
 };
+// ✅ NEW: Detect overlaps between Main Exam and Active Backlog Phase
+window.checkSyllabusOverlap = function() {
+    if (!state.nextExam || typeof backlogPlan === 'undefined') return;
+
+    // 1. Get Active Main Topics
+    const mainTopics = new Set(state.nextExam.syllabus.map(c => c.topic));
+
+    // 2. Get Active Backlog Topics (Dynamic Phase)
+    const planStart = backlogPlan.startDate;
+    const diff = Math.ceil((new Date() - planStart) / (1000 * 60 * 60 * 24));
+    let activePhase = 1;
+    if(diff > 45) activePhase = 4;
+    else if(diff > 30) activePhase = 3;
+    else if(diff > 15) activePhase = 2;
+
+    const backlogTopics = backlogPlan.syllabus
+        .filter(c => c.phase === activePhase) // Only check active phase
+        .map(c => c.topic);
+
+    // 3. Find Overlaps
+    const overlaps = backlogTopics.filter(topic => mainTopics.has(topic));
+
+    // 4. Alert User
+    if (overlaps.length > 0) {
+        // Show a special toast for synergy
+        setTimeout(() => {
+            showToast(`🚀 Synergy Alert: '${overlaps[0]}' is in both Main & Backlog!`);
+        }, 1500); // Small delay so it appears after load
+    }
+};
              function init() {
     // FIX: This must run FIRST to prevent the crash
     setupSchedule(); 
     
     // ✅ NEW: Activate Scroll Header Logic
     initScrollHeader(); 
+
+// ✅ ADD THIS LINE:
+    checkSyllabusOverlap();
 
     if (!isFirebaseActive && !localStorage.getItem('studyflow_demo_mode')) {           document.getElementById('auth-modal').classList.remove('hidden');
                 if(window.lucide) lucide.createIcons();
@@ -1815,73 +1848,77 @@ function renderDailyHadith() {
             return totalPts / count;
         }
 
-      // --- 2. THE MATH ENGINE (Calculates Syllabus Stats) ---
-        function calculateSmartMath(type) {
-            const today = new Date();
-            today.setHours(0,0,0,0);
+   // --- 2. THE MATH ENGINE (Calculates Syllabus Stats) ---
+function calculateSmartMath(type) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    let targetDate, syllabus;
+    
+    // ✅ DYNAMIC PHASE CALCULATION
+    // We calculate this upfront so we can filter EVERYTHING by it
+    let activePhase = 1;
+    if (typeof backlogPlan !== 'undefined') {
+        const planStart = backlogPlan.startDate;
+        const diff = Math.ceil((new Date() - planStart) / (1000 * 60 * 60 * 24));
+        if(diff > 45) activePhase = 4;
+        else if(diff > 30) activePhase = 3;
+        else if(diff > 15) activePhase = 2;
+    }
+
+    if (type === 'main') {
+        targetDate = state.nextExam ? new Date(state.nextExam.date) : new Date(); 
+        syllabus = state.nextExam ? state.nextExam.syllabus : [];
+    } else {
+        // Backlog Target: End of current phase (Start + Phase*15 days)
+        const planStart = typeof backlogPlan !== 'undefined' ? backlogPlan.startDate : new Date();
+        targetDate = new Date(planStart);
+        targetDate.setDate(planStart.getDate() + (activePhase * 15));
+        
+        // ✅ STRICT FILTERING: Only include chapters from the ACTIVE phase
+        // This prevents future chapters (like Hydrocarbons in Phase 3) from counting as "Planned Points" now
+        const fullSyllabus = typeof backlogPlan !== 'undefined' ? backlogPlan.syllabus : [];
+        syllabus = fullSyllabus.filter(c => c.phase === activePhase);
+    }
+
+    const daysLeft = Math.max(1, Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24)));
+
+    let totalPoints = 0;
+    let earnedPoints = 0;
+    let pendingTasks = []; 
+
+    const allCompleted = new Set(Object.values(state.tasks).flat().filter(t => t.completed).map(t => t.text));
+    const plannedToday = new Set((state.tasks[formatDateKey(today)] || []).map(t => t.text));
+
+    syllabus.forEach(chap => {
+        chap.dailyTests.forEach(dt => {
+            const subPts = getSubtopicPoints(dt, chap.subject, chap.topic);
             
-            let targetDate, syllabus;
-            let currentPhase = 1; // Default
-            
-            if (type === 'main') {
-                targetDate = new Date('2026-02-07T00:00:00'); 
-                syllabus = state.nextExam ? state.nextExam.syllabus : [];
-            } else {
-                // Calculate Backlog Target Date & Phase dynamically
-                const planStart = typeof backlogPlan !== 'undefined' ? backlogPlan.startDate : new Date();
-                const diff = Math.ceil((new Date() - planStart) / (1000 * 60 * 60 * 24));
+            dt.subs.forEach(sub => {
+                totalPoints += subPts;
+                const taskName = `Study: ${chap.topic} - ${sub}`;
                 
-                if(diff > 45) currentPhase = 4;
-                else if(diff > 30) currentPhase = 3;
-                else if(diff > 15) currentPhase = 2;
-
-                // Target date is end of current phase (Start + Phase*15 days)
-                targetDate = new Date(planStart);
-                targetDate.setDate(planStart.getDate() + (currentPhase * 15));
-                
-                syllabus = typeof backlogPlan !== 'undefined' ? backlogPlan.syllabus : [];
-            }
-
-            const daysLeft = Math.max(1, Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24)));
-
-            let totalPoints = 0;
-            let earnedPoints = 0;
-            let pendingTasks = []; 
-
-            const allCompleted = new Set(Object.values(state.tasks).flat().filter(t => t.completed).map(t => t.text));
-            const plannedToday = new Set((state.tasks[formatDateKey(today)] || []).map(t => t.text));
-
-            syllabus.forEach(chap => {
-                // ✅ STRICT FIX: Only analyze chapters in the ACTIVE phase
-                if (type === 'backlog' && chap.phase !== currentPhase) return;
-
-                chap.dailyTests.forEach(dt => {
-                    const subPts = getSubtopicPoints(dt, chap.subject, chap.topic);
-                    
-                    dt.subs.forEach(sub => {
-                        totalPoints += subPts;
-                        const taskName = `Study: ${chap.topic} - ${sub}`;
-                        
-                        if (allCompleted.has(taskName) || state.dailyTestsAttempted[dt.name]) {
-                            earnedPoints += subPts;
-                        } else if (!plannedToday.has(taskName)) {
-                            pendingTasks.push({
-                                text: taskName,
-                                subject: chap.subject,
-                                points: subPts,
-                                chapter: chap.topic,
-                                type: type
-                            });
-                        }
+                if (allCompleted.has(taskName) || state.dailyTestsAttempted[dt.name]) {
+                    earnedPoints += subPts;
+                } else if (!plannedToday.has(taskName)) {
+                    pendingTasks.push({
+                        text: taskName,
+                        subject: chap.subject,
+                        points: subPts,
+                        chapter: chap.topic,
+                        type: type
                     });
-                });
+                }
             });
+        });
+    });
 
-            const remainingPoints = totalPoints - earnedPoints;
-            const dailyTargetPoints = remainingPoints / daysLeft;
+    const remainingPoints = totalPoints - earnedPoints;
+    const dailyTargetPoints = remainingPoints / daysLeft;
 
-            return { daysLeft, totalPoints, remainingPoints, dailyTargetPoints, pendingTasks, syllabusRef: syllabus };
-        }  
+    return { daysLeft, totalPoints, remainingPoints, dailyTargetPoints, pendingTasks, syllabusRef: syllabus };
+}   
+  
         // --- 3. HELPER: CALCULATE POINTS ALREADY IN PLANNER ---
         function getPlannerPointsForToday(mode, syllabusRef) {
             const k = formatDateKey(state.selectedDate);
@@ -2114,6 +2151,7 @@ window.showPointsToast = function(points, current, target, subject, type) {
 };
    
 
+
 // --- 5. MANUAL ADD HOOK (With NEW Visuals & Duplicate Check) ---
 window.addTask = function(text, type = 'main', subject = 'General', chapter = null) {
     // 1. Get Today's List
@@ -2157,9 +2195,9 @@ window.addTask = function(text, type = 'main', subject = 'General', chapter = nu
         });
     }
     
-    // Scan Backlog (STRICT PHASE CHECK)
+    // Scan Backlog (STRICT ACTIVE PHASE CHECK)
     if (pointsFound === 0 && typeof backlogPlan !== 'undefined') {
-        // Calculate Current Phase
+        // Calculate Active Phase dynamically
         const planStart = backlogPlan.startDate;
         const diff = Math.ceil((new Date() - planStart) / (1000 * 60 * 60 * 24));
         let activePhase = 1;
@@ -2168,7 +2206,7 @@ window.addTask = function(text, type = 'main', subject = 'General', chapter = nu
         else if(diff > 15) activePhase = 2;
 
         backlogPlan.syllabus.forEach(chap => {
-            // ✅ FIX: Ignore chapters that are NOT in the active phase
+            // ✅ Only check chapters in the current phase
             if (chap.phase !== activePhase) return;
 
             chap.dailyTests.forEach(dt => {
@@ -2177,7 +2215,8 @@ window.addTask = function(text, type = 'main', subject = 'General', chapter = nu
                         pointsFound = getSubtopicPoints(dt, chap.subject, chap.topic);
                         detectedType = 'backlog';
                         detectedSubject = chap.subject;
-                        syllabusRef = backlogPlan.syllabus;
+                        // Use filtered syllabus reference
+                        syllabusRef = backlogPlan.syllabus.filter(c => c.phase === activePhase);
                     }
                 });
             });
