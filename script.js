@@ -2317,6 +2317,11 @@ window.addTask = function(text, type = 'main', subject = 'General', chapter = nu
         };
 
 window.switchView = function(view) {
+  // 1. INSTANTLY RESET SCROLL TO TOP (The Fix)
+    window.scrollTo({ top: 0, behavior: 'instant' }); 
+
+    state.activeView = view;
+    toggleMobileMenu(true);
     state.activeView = view;
     toggleMobileMenu(true); // Close mobile menu if open
     
