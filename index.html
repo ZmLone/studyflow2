@@ -245,7 +245,7 @@
         <div class="flex flex-row items-center justify-between gap-2 max-w-7xl mx-auto">
             <div id="header-dynamic-greeting" class="flex items-center min-h-[2rem] min-w-0 shrink"></div>
             <div class="flex items-center gap-3 shrink-0">
-                <div id="header-prayer-widget" class="flex items-center gap-0.5"></div>
+                <div id="header-prayer-widget" class="hidden md:flex items-center gap-0.5"></div>
                 <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors active:scale-95">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
@@ -386,42 +386,37 @@
                     <p class="text-slate-500 dark:text-slate-400">Select a subject to open its error log.</p>
                 </div>
         
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl w-full">
-                    <!-- Physics Book -->
-                    <div onclick="openNotebook('Physics')" class="group relative cursor-pointer transform transition-all hover:-translate-y-2 duration-300">
-                        <div class="absolute inset-0 bg-blue-600 rounded-r-2xl rounded-l-sm blur-lg opacity-20 group-hover:opacity-40 transition-opacity"></div>
-                        <div class="relative bg-gradient-to-br from-blue-600 to-blue-800 h-64 rounded-r-2xl rounded-l-md shadow-xl flex flex-col items-center justify-center border-l-8 border-blue-900 min-h-screen overflow-x-hidden">
-                            <div class="absolute top-0 right-0 w-20 h-full bg-white/5 skew-x-12 transform origin-bottom"></div>
-                            <i data-lucide="atom" class="w-16 h-16 text-white/80 mb-4"></i>
-                            <h3 class="text-2xl font-bold text-white tracking-wider">PHYSICS</h3>
-                            <div class="mt-4 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold text-white border border-white/30" id="count-physics">0 Errors</div>
-                        </div>
-                    </div>
-        
-                    <!-- Chemistry Book -->
-                    <div onclick="openNotebook('Chemistry')" class="group relative cursor-pointer transform transition-all hover:-translate-y-2 duration-300">
-                        <div class="absolute inset-0 bg-amber-500 rounded-r-2xl rounded-l-sm blur-lg opacity-20 group-hover:opacity-40 transition-opacity"></div>
-                        <div class="relative bg-gradient-to-br from-amber-500 to-orange-700 h-64 rounded-r-2xl rounded-l-md shadow-xl flex flex-col items-center justify-center border-l-8 border-orange-900 min-h-screen overflow-x-hidden">
-                            <div class="absolute top-0 right-0 w-20 h-full bg-white/5 skew-x-12 transform origin-bottom"></div>
-                            <i data-lucide="flask-conical" class="w-16 h-16 text-white/80 mb-4"></i>
-                            <h3 class="text-2xl font-bold text-white tracking-wider">CHEMISTRY</h3>
-                            <div class="mt-4 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold text-white border border-white/30" id="count-chemistry">0 Errors</div>
-                        </div>
-                    </div>
-        
-                    <!-- Biology Book -->
-                    <div onclick="openNotebook('Biology')" class="group relative cursor-pointer transform transition-all hover:-translate-y-2 duration-300">
-                        <div class="absolute inset-0 bg-emerald-600 rounded-r-2xl rounded-l-sm blur-lg opacity-20 group-hover:opacity-40 transition-opacity"></div>
-                        <div class="relative bg-gradient-to-br from-emerald-600 to-green-800 h-64 rounded-r-2xl rounded-l-md shadow-xl flex flex-col items-center justify-center border-l-8 border-green-900 min-h-screen overflow-x-hidden">
-                            <div class="absolute top-0 right-0 w-20 h-full bg-white/5 skew-x-12 transform origin-bottom"></div>
-                            <i data-lucide="dna" class="w-16 h-16 text-white/80 mb-4"></i>
-                            <h3 class="text-2xl font-bold text-white tracking-wider">BIOLOGY</h3>
-                            <div class="mt-4 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold text-white border border-white/30" id="count-biology">0 Errors</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        
+           <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl w-full">
+    <div onclick="openNotebook('Physics')" class="group relative cursor-pointer transform transition-all hover:-translate-y-2 duration-300">
+        <div class="absolute inset-0 bg-blue-600 rounded-r-2xl rounded-l-sm blur-lg opacity-20 group-hover:opacity-40 transition-opacity"></div>
+        <div class="relative bg-gradient-to-br from-blue-600 to-blue-800 h-64 rounded-r-2xl rounded-l-md shadow-xl flex flex-col items-center justify-center border-l-8 border-blue-900">
+            <div class="absolute top-0 right-0 w-20 h-full bg-white/5 skew-x-12 transform origin-bottom"></div>
+            <i data-lucide="atom" class="w-16 h-16 text-white/80 mb-4"></i>
+            <h3 class="text-2xl font-bold text-white tracking-wider">PHYSICS</h3>
+            <div class="mt-4 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold text-white border border-white/30" id="count-physics">0 Errors</div>
+        </div>
+    </div>
+
+    <div onclick="openNotebook('Chemistry')" class="group relative cursor-pointer transform transition-all hover:-translate-y-2 duration-300">
+        <div class="absolute inset-0 bg-amber-500 rounded-r-2xl rounded-l-sm blur-lg opacity-20 group-hover:opacity-40 transition-opacity"></div>
+        <div class="relative bg-gradient-to-br from-amber-500 to-orange-700 h-64 rounded-r-2xl rounded-l-md shadow-xl flex flex-col items-center justify-center border-l-8 border-orange-900">
+            <div class="absolute top-0 right-0 w-20 h-full bg-white/5 skew-x-12 transform origin-bottom"></div>
+            <i data-lucide="flask-conical" class="w-16 h-16 text-white/80 mb-4"></i>
+            <h3 class="text-2xl font-bold text-white tracking-wider">CHEMISTRY</h3>
+            <div class="mt-4 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold text-white border border-white/30" id="count-chemistry">0 Errors</div>
+        </div>
+    </div>
+
+    <div onclick="openNotebook('Biology')" class="group relative cursor-pointer transform transition-all hover:-translate-y-2 duration-300">
+        <div class="absolute inset-0 bg-emerald-600 rounded-r-2xl rounded-l-sm blur-lg opacity-20 group-hover:opacity-40 transition-opacity"></div>
+        <div class="relative bg-gradient-to-br from-emerald-600 to-green-800 h-64 rounded-r-2xl rounded-l-md shadow-xl flex flex-col items-center justify-center border-l-8 border-green-900">
+            <div class="absolute top-0 right-0 w-20 h-full bg-white/5 skew-x-12 transform origin-bottom"></div>
+            <i data-lucide="dna" class="w-16 h-16 text-white/80 mb-4"></i>
+            <h3 class="text-2xl font-bold text-white tracking-wider">BIOLOGY</h3>
+            <div class="mt-4 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold text-white border border-white/30" id="count-biology">0 Errors</div>
+        </div>
+    </div>
+</div>             
             <!-- SECTION B: THE OPEN NOTEBOOK (Hidden initially) -->
             <div id="notebook-content" class="hidden flex-1 flex flex-col h-full bg-white dark:bg-slate-900">
                 <!-- Notebook Header -->
