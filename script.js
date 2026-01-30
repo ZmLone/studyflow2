@@ -3224,7 +3224,7 @@ window.renderTasks = renderTasks;
 
 
 window.renderHeader = function() {
-    // 1. DATE LOGIC (Time Capsule) - Keep this distinct
+    // 1. DATE LOGIC (Time Capsule)
     const dayEl = document.getElementById('header-date-day');
     const fullEl = document.getElementById('header-date-full');
     const now = new Date();
@@ -3240,61 +3240,46 @@ window.renderHeader = function() {
         fullEl.textContent = state.selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
 
-    // 2. 🌈 COLORFUL ANIMATED GREETING (Replaces App Title)
+    // 2. MINIMALIST GREETING ENGINE
     const greetingEl = document.getElementById('header-dynamic-greeting');
     if(greetingEl) {
         const hour = now.getHours();
         let greeting = "Welcome";
         let icon = "✨";
         
-        // Define color themes based on time
-        let gradientClass = "from-indigo-600 via-purple-600 to-pink-600"; // Default/Night
+        let gradientClass = "from-indigo-600 via-purple-600 to-pink-600"; 
 
         if (hour >= 5 && hour < 12) { 
-            greeting = "Good morning"; 
-            icon = "🌅"; 
-            gradientClass = "from-orange-500 via-amber-500 to-yellow-500";
+            greeting = "Good morning"; icon = "🌅"; gradientClass = "from-orange-500 via-amber-500 to-yellow-500";
         }
         else if (hour >= 12 && hour < 17) { 
-            greeting = "Good afternoon"; 
-            icon = "☀️"; 
-            gradientClass = "from-blue-500 via-cyan-500 to-teal-500";
+            greeting = "Good afternoon"; icon = "☀️"; gradientClass = "from-blue-500 via-cyan-500 to-teal-500";
         }
         else if (hour >= 17 && hour < 22) { 
-            greeting = "Good evening"; 
-            icon = "🌙"; 
-            gradientClass = "from-indigo-500 via-purple-500 to-pink-500";
+            greeting = "Good evening"; icon = "🌙"; gradientClass = "from-indigo-500 via-purple-500 to-pink-500";
         }
         else { 
-            greeting = "Up late"; 
-            icon = "🦉"; 
-            gradientClass = "from-violet-600 via-fuchsia-600 to-indigo-600";
+            greeting = "Up late"; icon = "🦉"; gradientClass = "from-violet-600 via-fuchsia-600 to-indigo-600";
         }
 
         const name = state.displayName || "Future Doctor";
         
-        // ✨ THE INJECTION: Big Text + Animation + Gradient Name
+        // ✅ NEW: Compact Layout (Icon + Stacked Text)
         greetingEl.innerHTML = `
-            <div class="flex items-center gap-3 animate-in fade-in slide-in-from-left-4 duration-700 ease-out">
-                <div class="text-3xl md:text-4xl animate-bounce delay-75 drop-shadow-sm">
-                    ${icon}
-                </div>
-                <div>
-                    <h1 class="text-xl md:text-2xl font-black tracking-tight text-slate-900 dark:text-white leading-none">
-                        ${greeting},
-                    </h1>
-                    <button onclick="openProfileModal()" class="group relative flex items-center mt-0.5" title="Tap to Edit Profile">
-                        <span class="text-xl md:text-3xl font-black bg-gradient-to-r ${gradientClass} text-transparent bg-clip-text transition-all duration-300 group-hover:scale-[1.02]">
+            <div class="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-700 ease-out">
+                <div class="text-xl md:text-2xl animate-bounce delay-75 drop-shadow-sm">${icon}</div>
+                
+                <div class="flex flex-col justify-center">
+                    <h1 class="text-[10px] md:text-xs font-bold text-slate-400 dark:text-slate-500 leading-none mb-0.5 uppercase tracking-wide">${greeting}</h1>
+                    <button onclick="openProfileModal()" class="text-left group">
+                        <span class="text-sm md:text-base font-black bg-gradient-to-r ${gradientClass} text-transparent bg-clip-text truncate max-w-[140px] block group-hover:opacity-80 transition-opacity">
                             ${name}
                         </span>
-                        <span class="absolute -bottom-1 left-0 w-0 h-[3px] bg-gradient-to-r ${gradientClass} transition-all duration-300 group-hover:w-full rounded-full"></span>
-                        <i data-lucide="edit-3" class="w-3 h-3 ml-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></i>
                     </button>
                 </div>
             </div>
         `;
         
-        // Initialize the edit icon
         if(window.lucide) lucide.createIcons({ root: greetingEl });
     }
 
