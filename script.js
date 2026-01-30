@@ -2294,8 +2294,8 @@ window.switchView = function(view) {
     toggleMobileMenu(true); // Close mobile menu if open
     
     // 1. Update Buttons Highlighting
-    ['overview','target','backlog', 'mistakes', 'leaderboard', 'namaz', 'planner'].forEach(v => {
-        const btn = document.getElementById(`nav-${v}`);
+   ['overview','target','backlog', 'mistakes', 'leaderboard', 'namaz'].forEach(v => {
+         const btn = document.getElementById(`nav-${v}`);
         if(btn) {
             // Reset all to default style
             btn.className = "group relative w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-brand-600 dark:hover:text-brand-400 transition-all duration-200 hover:translate-x-1";
@@ -2325,7 +2325,6 @@ window.switchView = function(view) {
     if(view === 'backlog') renderSyllabus('backlog');
     if(view === 'leaderboard') fetchLeaderboard();
     if(view === 'namaz') renderNamazView();
-    if(view === 'planner') renderPlanner();
     if(view === 'mistakes') {
         if(state.activeNotebook) renderNotebookEntries();
         else updateShelfCounts();
@@ -2833,399 +2832,14 @@ window.updateSidebarBadges = function() {
 // --- PLANNER FUNCTIONS ---
 
 
-// --- NEW MOBILE-FIRST PLANNER LOGIC ---
 
-// 1. Tab Switching (Unscheduled vs Scheduled)
-window.state.plannerTab = 'unscheduled'; 
-
-window.setPlannerTab = function(tab) {
-    state.plannerTab = tab;
-    const unschBtn = document.getElementById('tab-unscheduled');
-    const schBtn = document.getElementById('tab-scheduled');
-    const unschSec = document.getElementById('planner-section-unscheduled');
-    const schSec = document.getElementById('planner-section-scheduled');
-
-    if(tab === 'unscheduled') {
-        unschBtn.className = "px-3 py-1.5 rounded-md text-xs font-bold transition-all bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-300";
-        schBtn.className = "px-3 py-1.5 rounded-md text-xs font-bold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-500 dark:hover:text-slate-300";
-        unschSec.classList.remove('hidden');
-        schSec.classList.add('hidden');
-    } else {
-        schBtn.className = "px-3 py-1.5 rounded-md text-xs font-bold transition-all bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-300";
-        unschBtn.className = "px-3 py-1.5 rounded-md text-xs font-bold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-500 dark:hover:text-slate-300";
-        schSec.classList.remove('hidden');
-        unschSec.classList.add('hidden');
-    }
-};
-// --- Helper for Accordion Toggle ---
-window.togglePlannerGroup = function(id) {
-    const body = document.getElementById(`group-body-${id}`);
-    const icon = document.getElementById(`group-icon-${id}`);
-    
-    if(body) {
-        const isHidden = body.classList.contains('hidden');
-        if(isHidden) {
-            body.classList.remove('hidden');
-            body.classList.add('animate-in', 'fade-in', 'slide-in-from-top-1');
-            if(icon) icon.style.transform = 'rotate(180deg)';
-        } else {
-            body.classList.add('hidden');
-            if(icon) icon.style.transform = 'rotate(0deg)';
-        }
-    }
-};
-// 2. Main Render Function
-window.renderPlanner = function() {
-    setPlannerTab(state.plannerTab || 'unscheduled');
-
-    const poolList = document.getElementById('planner-pool-list');
-    const scheduleList = document.getElementById('planner-schedule-list');
-    const completedList = document.getElementById('planner-completed-list');
-    const completedContainer = document.getElementById('planner-completed-container');
-    
-    if(!poolList) return;
-
-    poolList.innerHTML = '';
-    scheduleList.innerHTML = '';
-    completedList.innerHTML = '';
-
-    const k = formatDateKey(state.selectedDate);
-    const tasks = state.tasks[k] || [];
-    
-    // Filter tasks
-    const unscheduled = tasks.filter(t => !t.completed && (!t.timeLabel || t.timeLabel.trim() === ''));
-    const scheduled = tasks.filter(t => !t.completed && t.timeLabel && t.timeLabel.trim() !== '');
-    const completed = tasks.filter(t => t.completed);
-
-    // --- Helper to Group Tasks by Chapter ---
-    const groupByChapter = (taskList) => {
-        const groups = {};
-        taskList.forEach(t => {
-            // Extract chapter name or default to "General"
-            let chap = t.chapter;
-            if(!chap && t.text.includes(" - ")) chap = t.text.split(" - ")[0];
-            if(!chap) chap = 'General Tasks';
-            
-            if(!groups[chap]) groups[chap] = [];
-            groups[chap].push(t);
-        });
-        return groups;
-    };
-
-    // --- A. UNSCHEDULED TAB (With Dropdown) ---
-    if(unscheduled.length === 0) {
-        poolList.innerHTML = `<div class="flex flex-col items-center justify-center py-12 text-slate-400"><i data-lucide="check-circle-2" class="w-10 h-10 mb-2 opacity-50"></i><p class="text-sm">All set! Check your schedule.</p></div>`;
-    } else {
-        const groups = groupByChapter(unscheduled);
-        Object.entries(groups).forEach(([chapName, groupTasks], index) => {
-            // Create unique ID for accordion
-            const safeId = 'pool-' + index + '-' + Date.now(); 
-            
-            const el = document.createElement('div');
-            el.className = "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-all";
-            
-            el.innerHTML = `
-                <div class="p-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center cursor-pointer select-none" onclick="togglePlannerGroup('${safeId}')">
-                    <div class="flex items-center gap-2 overflow-hidden">
-                        <i data-lucide="chevron-down" id="group-icon-${safeId}" class="w-4 h-4 text-slate-400 transition-transform duration-200"></i>
-                        <div class="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">
-                            ${chapName} <span class="text-xs font-normal text-slate-400 ml-1">(${groupTasks.length})</span>
-                        </div>
-                    </div>
-                    <button onclick="event.stopPropagation(); openScheduler(null, '${chapName}')" class="shrink-0 flex items-center gap-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-200 transition-colors z-10">
-                        <i data-lucide="clock" class="w-3 h-3"></i> Plan All
-                    </button>
-                </div>
-                
-                <div id="group-body-${safeId}" class="hidden bg-white dark:bg-slate-900">
-                    <div class="p-1 space-y-0.5">
-                        ${groupTasks.map(t => `
-                            <div class="flex items-center justify-between p-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg group transition-colors pl-8">
-                                <span class="text-xs font-medium text-slate-600 dark:text-slate-300 truncate pr-2">${t.text.replace(chapName + ' - ', '')}</span>
-                                <button onclick="openScheduler('${t.id}', '${t.text}')" class="p-1.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all" title="Plan specific topic">
-                                    <i data-lucide="arrow-right-circle" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-            poolList.appendChild(el);
-        });
-    }
-
-    // --- B. SCHEDULED TAB (With Dropdown) ---
-    if(scheduled.length === 0) {
-        scheduleList.innerHTML = `<div class="text-center py-10 text-slate-400 text-xs italic">Nothing scheduled yet. Go to 'To Plan' tab.</div>`;
-    } else {
-        const groups = groupByChapter(scheduled);
-        
-        Object.entries(groups).forEach(([chapName, groupTasks], index) => {
-            const safeId = 'sched-' + index + '-' + Date.now();
-            
-            // Determine time label for the group (use the first task's time or "Mixed")
-            const timeLabel = groupTasks[0].timeLabel || "Scheduled";
-            const isMixed = groupTasks.some(t => t.timeLabel !== timeLabel);
-            const displayTime = isMixed ? "Multiple Times" : timeLabel;
-
-            const el = document.createElement('div');
-            el.className = "flex gap-3 relative mb-4"; // Flex container for Timeline + Card
-            
-            el.innerHTML = `
-                <div class="flex flex-col items-center pt-2">
-                    <div class="w-3 h-3 bg-indigo-500 rounded-full ring-4 ring-indigo-50 dark:ring-indigo-900/20 z-10"></div>
-                    <div class="w-0.5 flex-1 bg-slate-200 dark:bg-slate-800 my-1"></div>
-                </div>
-
-                <div class="flex-1 min-w-0">
-                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
-                        
-                        <div class="p-3 flex justify-between items-start cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors" onclick="togglePlannerGroup('${safeId}')">
-                            <div>
-                                <div class="inline-flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-md text-[10px] font-bold mb-1.5">
-                                    <i data-lucide="clock" class="w-3 h-3"></i> ${displayTime}
-                                </div>
-                                <h4 class="font-bold text-slate-800 dark:text-white text-sm leading-tight flex items-center gap-2">
-                                    ${chapName}
-                                    <span class="text-xs font-normal text-slate-400">(${groupTasks.length})</span>
-                                </h4>
-                            </div>
-                            <i data-lucide="chevron-down" id="group-icon-${safeId}" class="w-4 h-4 text-slate-400 mt-1 transition-transform duration-200"></i>
-                        </div>
-
-                        <div id="group-body-${safeId}" class="hidden border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
-                            <div class="p-2 space-y-1">
-                                ${groupTasks.map(t => `
-                                    <div class="flex items-center gap-3 p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800/50 shadow-sm">
-                                        <button onclick="toggleTask('${t.id}'); renderPlanner();" class="shrink-0 w-5 h-5 rounded-full border-2 border-slate-300 dark:border-slate-600 hover:border-green-500 hover:bg-green-50 transition-all"></button>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">${t.text.replace(chapName + ' - ', '')}</p>
-                                        </div>
-                                        <button onclick="removeTime('${t.id}')" class="text-slate-300 hover:text-red-500">
-                                            <i data-lucide="x-circle" class="w-4 h-4"></i>
-                                        </button>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            scheduleList.appendChild(el);
-        });
-    }
-
-    // --- C. COMPLETED SECTION ---
-    if(completed.length > 0) {
-        completedContainer.classList.remove('hidden');
-        completed.forEach(t => {
-            const el = document.createElement('div');
-            el.className = "flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800/50";
-            el.innerHTML = `
-                <div class="p-1 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 cursor-pointer" onclick="toggleTask('${t.id}'); renderPlanner();">
-                    <i data-lucide="check" class="w-3 h-3"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-xs font-medium text-slate-500 line-through truncate">${t.text}</p>
-                </div>
-                <span class="text-[10px] text-slate-400">${t.timeLabel || 'Done'}</span>
-            `;
-            completedList.appendChild(el);
-        });
-    } else {
-        completedContainer.classList.add('hidden');
-    }
-
-    if(window.lucide) lucide.createIcons({ root: document.getElementById('view-planner') });
-};
-
-// 3. Quick Add Task
-window.addPlannerTask = function() {
-    const textInput = document.getElementById('planner-new-text');
-    if(textInput && textInput.value.trim()) {
-        const key = formatDateKey(state.selectedDate);
-        if (!state.tasks[key]) state.tasks[key] = [];
-        
-        state.tasks[key].push({
-        id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),    
-            text: textInput.value.trim(),
-            type: 'manual', 
-            subject: 'General', 
-            timeLabel: "", // Empty = Unscheduled
-            completed: false 
-        });
-        
-        textInput.value = '';
-        saveData();
-        renderPlanner();
-    }
-};
-
-// 4. Modal & Time Logic
-window.openScheduler = function(taskId, name) {
-    const modal = document.getElementById('scheduler-modal');
-    const title = document.getElementById('scheduler-subtitle');
-    const idInput = document.getElementById('scheduler-task-id');
-    const isChapInput = document.getElementById('scheduler-is-chapter');
-    const chapNameInput = document.getElementById('scheduler-chapter-name');
-    
-    // Reset inputs
-    document.getElementById('scheduler-start').value = '';
-    document.getElementById('scheduler-duration').value = '';
-
-    if(taskId) {
-        title.textContent = "Scheduling: " + name;
-        idInput.value = taskId;
-        isChapInput.value = "false";
-    } else {
-        title.textContent = "Scheduling Chapter: " + name;
-        isChapInput.value = "true";
-        chapNameInput.value = name;
-    }
-    modal.classList.remove('hidden');
-};
-
-window.closeScheduler = function() {
-    document.getElementById('scheduler-modal').classList.add('hidden');
-};
-
-window.setDuration = function(val) {
-    document.getElementById('scheduler-duration').value = val;
-};
-
-window.confirmSchedule = function() {
-    const startStr = document.getElementById('scheduler-start').value;
-    const duration = parseFloat(document.getElementById('scheduler-duration').value);
-    
-    if(!startStr || !duration) {
-        alert("Please set both start time and duration.");
-        return;
-    }
-
-    // Calculate End Time
-    const [h, m] = startStr.split(':').map(Number);
-    const startDate = new Date();
-    startDate.setHours(h, m, 0, 0);
-    const endDate = new Date(startDate.getTime() + duration * 60 * 60 * 1000);
-    
-    const formatTime = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-    const timeLabel = `${formatTime(startDate)} - ${formatTime(endDate)}`;
-
-    const k = formatDateKey(state.selectedDate);
-    const isChapter = document.getElementById('scheduler-is-chapter').value === "true";
-    
-    if(isChapter) {
-        const chapName = document.getElementById('scheduler-chapter-name').value;
-        (state.tasks[k] || []).forEach(t => {
-            let tChap = t.chapter || (t.text.includes(" - ") ? t.text.split(" - ")[0] : null);
-            if(tChap === chapName && !t.completed) {
-                t.timeLabel = timeLabel;
-            }
-        });
-    } else {
-        const taskId = document.getElementById('scheduler-task-id').value;
-        const task = (state.tasks[k] || []).find(t => t.id === taskId);
-        if(task) task.timeLabel = timeLabel;
-    }
-
-    saveData();
-    closeScheduler();
-    
-    // Auto-switch to Scheduled tab
-    setPlannerTab('scheduled');
-    renderPlanner();
-};
-
-window.removeTime = function(id) {
-    const k = formatDateKey(state.selectedDate);
-    const task = state.tasks[k].find(t => t.id === id);
-    if(task) {
-        task.timeLabel = ""; 
-        saveData();
-        renderPlanner();
-    }
-};
-
-
-window.assignChapterTime = function(chapName, inputId) {
-    const input = document.getElementById(inputId);
-    if(!input || !input.value.trim()) return;
-    
-    const timeVal = input.value.trim();
-    const k = formatDateKey(state.selectedDate);
-    const tasks = state.tasks[k] || [];
-    
-    let updatedCount = 0;
-    
-    tasks.forEach(t => {
-        // Match explicit chapter OR inferred chapter from text string
-        let tChap = t.chapter;
-        if (!tChap && t.text.startsWith("Study: ")) {
-            const parts = t.text.replace("Study: ", "").split(" - ");
-            if (parts.length > 1) tChap = parts[0];
-        }
-        if(!tChap) tChap = 'Miscellaneous Tasks';
-
-        // If it matches AND is currently unscheduled, update it
-        if(tChap === chapName && (!t.timeLabel || t.timeLabel.trim() === '')) {
-            t.timeLabel = timeVal;
-            updatedCount++;
-        }
-    });
-
-    if(updatedCount > 0) {
-        saveData();
-        renderPlanner();
-        // Simple toast notification
-        const toast = document.createElement('div');
-        toast.className = "fixed bottom-4 right-4 bg-slate-900 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-in fade-in slide-in-from-bottom-2";
-        toast.textContent = `Moved ${updatedCount} tasks to ${timeVal}`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
-};
-// ✅ NEW: Scroll-to-Hide Header Logic
-// ✅ NEW: Scroll-to-Hide Header Logic (Improved)
-
-// ✅ NEW: Smooth GPU-Accelerated Scroll Hide
 window.initScrollHeader = function() {
-    const scrollEl = document.getElementById('overview-scroll-view');
+    // 🛑 LOGIC DISABLED for GitHub Style
     const headerEl = document.getElementById('overview-header');
-    
-    if (!scrollEl || !headerEl) return;
-
-    let lastScroll = 0;
-    let ticking = false; // Performance throttle
-
-    scrollEl.addEventListener('scroll', () => {
-        const currentScroll = scrollEl.scrollTop;
-        
-        if (!ticking) {
-            window.requestAnimationFrame(() => {
-                // 1. Always show if near top (bounce protection)
-                if (currentScroll < 50) {
-                    headerEl.style.transform = "translateY(0)";
-                } 
-                // 2. Hide on Scroll Down
-                else if (currentScroll > lastScroll && currentScroll > 60) {
-                    headerEl.style.transform = "translateY(-100%)";
-                } 
-                // 3. Show on Scroll Up
-                else if (currentScroll < lastScroll) {
-                    headerEl.style.transform = "translateY(0)";
-                }
-                
-                lastScroll = Math.max(0, currentScroll); // Prevent negative scroll bounce
-                ticking = false;
-            });
-            ticking = true;
-        }
-    });
+    if(headerEl) headerEl.style.transform = "none";
 };
+
 document.addEventListener('DOMContentLoaded', init);
-
- document.addEventListener('DOMContentLoaded', init);
-
         // Optimization: FOUC listener - Triggered on DOMContentLoaded instead of Load for faster paint
         document.addEventListener('DOMContentLoaded', () => {
             // Small timeout to allow Tailwind CDN to parse initial classes
@@ -3285,68 +2899,30 @@ window.renderTasks = renderTasks;
 
 
 window.renderHeader = function() {
-    // 1. DATE LOGIC (Time Capsule)
-    const dayEl = document.getElementById('header-date-day');
-    const fullEl = document.getElementById('header-date-full');
-    const now = new Date();
-    const isToday = state.selectedDate.toDateString() === now.toDateString();
+    // 1. UPDATE BREADCRUMB
+    const userEl = document.getElementById('header-breadcrumb-user');
+    const pageEl = document.getElementById('header-breadcrumb-page'); // ✅ NEW
+    const avatarEl = document.getElementById('header-avatar-display');
+    
+    if (userEl) userEl.textContent = state.displayName || "Guest";
+    if (avatarEl) avatarEl.textContent = (state.displayName || "G").charAt(0).toUpperCase();
 
-    if(dayEl) {
-        dayEl.textContent = isToday ? "TODAY" : state.selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
-        if(isToday) dayEl.className = "uppercase tracking-widest text-[9px] text-brand-600 font-extrabold";
-        else dayEl.className = "uppercase tracking-widest text-[9px] text-slate-400";
+    // ✅ DYNAMIC PAGE TITLE
+    if (pageEl) {
+        const titles = {
+            'overview': 'Overview',
+            'target': 'Target Syllabus',
+            'backlog': 'Recovery Plan',
+            'mistakes': 'Mistake Notebook',
+            'leaderboard': 'Leaderboard',
+            'namaz': 'Spiritual'
+        };
+        // Update the text based on the current active view
+        pageEl.textContent = titles[state.activeView] || 'StudyFlow';
     }
 
-    if(fullEl) {
-        fullEl.textContent = state.selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    }
-
-    // 2. MINIMALIST GREETING ENGINE
-    const greetingEl = document.getElementById('header-dynamic-greeting');
-    if(greetingEl) {
-        const hour = now.getHours();
-        let greeting = "Welcome";
-        let icon = "✨";
-        
-        let gradientClass = "from-indigo-600 via-purple-600 to-pink-600"; 
-
-        if (hour >= 5 && hour < 12) { 
-            greeting = "Good morning"; icon = "🌅"; gradientClass = "from-orange-500 via-amber-500 to-yellow-500";
-        }
-        else if (hour >= 12 && hour < 17) { 
-            greeting = "Good afternoon"; icon = "☀️"; gradientClass = "from-blue-500 via-cyan-500 to-teal-500";
-        }
-        else if (hour >= 17 && hour < 22) { 
-            greeting = "Good evening"; icon = "🌙"; gradientClass = "from-indigo-500 via-purple-500 to-pink-500";
-        }
-        else { 
-            greeting = "Up late"; icon = "🦉"; gradientClass = "from-violet-600 via-fuchsia-600 to-indigo-600";
-        }
-
-        const name = state.displayName || "Future Doctor";
-        
-        // ✅ NEW: Compact Layout (Icon + Stacked Text)
-        greetingEl.innerHTML = `
-            <div class="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-700 ease-out">
-                <div class="text-xl md:text-2xl animate-bounce delay-75 drop-shadow-sm">${icon}</div>
-                
-                <div class="flex flex-col justify-center">
-                    <h1 class="text-[10px] md:text-xs font-bold text-slate-400 dark:text-slate-500 leading-none mb-0.5 uppercase tracking-wide">${greeting}</h1>
-                    <button onclick="openProfileModal()" class="text-left group">
-                        <span class="text-sm md:text-base font-black bg-gradient-to-r ${gradientClass} text-transparent bg-clip-text truncate max-w-[140px] block group-hover:opacity-80 transition-opacity">
-                            ${name}
-                        </span>
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        if(window.lucide) lucide.createIcons({ root: greetingEl });
-    }
-
-    // 3. Agenda Date Sync
-    const agendaEl = document.getElementById('agenda-date-display');
-    if(agendaEl) agendaEl.textContent = state.selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    // 2. RENDER WIDGETS
+    renderHeaderPrayerWidget();
 };
 
 // ✅ NEW: Renders the 5-pill prayer strip in the header
@@ -3368,7 +2944,6 @@ window.renderHeaderPrayerWidget = function() {
     container.innerHTML = prayers.map(p => {
         const isDone = todayData[p.key] === true;
         
-        // This is the line you were looking for (Updated with White/Border style)
         let baseClass = "flex-1 md:flex-none h-9 w-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-xs font-bold transition-all duration-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm";
         
         let stateClass = isDone 
@@ -3384,7 +2959,6 @@ window.renderHeaderPrayerWidget = function() {
 
     if(window.lucide) lucide.createIcons({ root: container });
 };
-
 // ==========================================
 // 🚀 TACTICAL DASHBOARD V4 (Strict Phases + Total %)
 // ==========================================
@@ -4299,7 +3873,7 @@ function startSnow() {
     canvas.width = width;
     canvas.height = height;
 
-    const maxFalling = 400; // Constant density
+const maxFalling = 400; 
     const fallingFlakes = [];
     let landedFlakes = []; 
 
