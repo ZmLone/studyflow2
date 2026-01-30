@@ -1815,18 +1815,30 @@ function renderDailyHadith() {
             return totalPts / count;
         }
 
-        // --- 2. THE MATH ENGINE (Calculates Syllabus Stats) ---
+      // --- 2. THE MATH ENGINE (Calculates Syllabus Stats) ---
         function calculateSmartMath(type) {
             const today = new Date();
             today.setHours(0,0,0,0);
             
             let targetDate, syllabus;
+            let currentPhase = 1; // Default
             
             if (type === 'main') {
                 targetDate = new Date('2026-02-07T00:00:00'); 
                 syllabus = state.nextExam ? state.nextExam.syllabus : [];
             } else {
-                targetDate = new Date('2026-02-12T00:00:00');
+                // Calculate Backlog Target Date & Phase dynamically
+                const planStart = typeof backlogPlan !== 'undefined' ? backlogPlan.startDate : new Date();
+                const diff = Math.ceil((new Date() - planStart) / (1000 * 60 * 60 * 24));
+                
+                if(diff > 45) currentPhase = 4;
+                else if(diff > 30) currentPhase = 3;
+                else if(diff > 15) currentPhase = 2;
+
+                // Target date is end of current phase (Start + Phase*15 days)
+                targetDate = new Date(planStart);
+                targetDate.setDate(planStart.getDate() + (currentPhase * 15));
+                
                 syllabus = typeof backlogPlan !== 'undefined' ? backlogPlan.syllabus : [];
             }
 
@@ -1840,7 +1852,8 @@ function renderDailyHadith() {
             const plannedToday = new Set((state.tasks[formatDateKey(today)] || []).map(t => t.text));
 
             syllabus.forEach(chap => {
-                if (type === 'backlog' && chap.phase > 1) return;
+                // ✅ STRICT FIX: Only analyze chapters in the ACTIVE phase
+                if (type === 'backlog' && chap.phase !== currentPhase) return;
 
                 chap.dailyTests.forEach(dt => {
                     const subPts = getSubtopicPoints(dt, chap.subject, chap.topic);
@@ -1868,8 +1881,7 @@ function renderDailyHadith() {
             const dailyTargetPoints = remainingPoints / daysLeft;
 
             return { daysLeft, totalPoints, remainingPoints, dailyTargetPoints, pendingTasks, syllabusRef: syllabus };
-        }
-
+        }  
         // --- 3. HELPER: CALCULATE POINTS ALREADY IN PLANNER ---
         function getPlannerPointsForToday(mode, syllabusRef) {
             const k = formatDateKey(state.selectedDate);
@@ -2101,17 +2113,18 @@ window.showPointsToast = function(points, current, target, subject, type) {
     }, 3500);
 };
    
+
 // --- 5. MANUAL ADD HOOK (With NEW Visuals & Duplicate Check) ---
 window.addTask = function(text, type = 'main', subject = 'General', chapter = null) {
     // 1. Get Today's List
     const key = formatDateKey(state.selectedDate);
     if (!state.tasks[key]) state.tasks[key] = [];
 
-    // ✅ PREVENT DUPLICATES
+    // PREVENT DUPLICATES
     const alreadyExists = state.tasks[key].some(t => t.text === text);
     if (alreadyExists) {
         showToast("⚠️ Task already added to planner");
-        return; // Stop here!
+        return; 
     }
 
     // 2. Add New Task
@@ -2125,7 +2138,7 @@ window.addTask = function(text, type = 'main', subject = 'General', chapter = nu
     // 3. CHECK POINTS & SHOW UPDATED VISUALS
     let pointsFound = 0;
     let detectedType = 'main';
-    let detectedSubject = subject; // Use the manual subject selection initially
+    let detectedSubject = subject; 
     let syllabusRef = [];
 
     // Scan Main
@@ -2144,9 +2157,20 @@ window.addTask = function(text, type = 'main', subject = 'General', chapter = nu
         });
     }
     
-    // Scan Backlog if not found
+    // Scan Backlog (STRICT PHASE CHECK)
     if (pointsFound === 0 && typeof backlogPlan !== 'undefined') {
+        // Calculate Current Phase
+        const planStart = backlogPlan.startDate;
+        const diff = Math.ceil((new Date() - planStart) / (1000 * 60 * 60 * 24));
+        let activePhase = 1;
+        if(diff > 45) activePhase = 4;
+        else if(diff > 30) activePhase = 3;
+        else if(diff > 15) activePhase = 2;
+
         backlogPlan.syllabus.forEach(chap => {
+            // ✅ FIX: Ignore chapters that are NOT in the active phase
+            if (chap.phase !== activePhase) return;
+
             chap.dailyTests.forEach(dt => {
                 dt.subs.forEach(sub => {
                     if (text.includes(sub)) {
@@ -2165,10 +2189,8 @@ window.addTask = function(text, type = 'main', subject = 'General', chapter = nu
         const math = calculateSmartMath(detectedType);
         const planned = getPlannerPointsForToday(detectedType, syllabusRef);
         
-        // ✨ CALL THE NEW VISUAL FUNCTION ✨
         showPointsToast(pointsFound, planned, math.dailyTargetPoints, detectedSubject, detectedType);
     } else {
-        // Generic toast for non-syllabus tasks
         showToast("Task added to planner");
     }
 };
