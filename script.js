@@ -8,20 +8,31 @@ window.onerror = function(msg, url, line) {
     }
 };
 window.showToast = function(message) {
-    // Create toast element
+    // 1. Create Wrapper for POSITIONING (Fixed, Centered, No Animation)
+    // This ensures the element stays perfectly centered regardless of inner animations
+    const wrapper = document.createElement('div');
+    wrapper.className = "fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] pointer-events-none";
+
+    // 2. Create Toast for STYLING & ANIMATION
+    // We removed the positioning classes from here to avoid conflicts
     const toast = document.createElement('div');
-    toast.className = "fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-2xl font-bold text-sm shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300";
+    toast.className = "bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-2xl font-bold text-sm shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300 pointer-events-auto";
     toast.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4 text-brand-500"></i> ${message}`;
     
-    document.body.appendChild(toast);
+    // 3. Assemble
+    wrapper.appendChild(toast);
+    document.body.appendChild(wrapper);
+
+    // Initialize icons
     if(window.lucide) lucide.createIcons({ root: toast });
 
-    // Remove after 4 seconds
+    // 4. Remove after 4 seconds (Animate out inner toast, then remove wrapper)
     setTimeout(() => {
         toast.classList.add('animate-out', 'fade-out', 'slide-out-to-bottom-4');
-        setTimeout(() => toast.remove(), 300);
+        setTimeout(() => wrapper.remove(), 300);
     }, 4000);
 };
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
  import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";       
@@ -1340,22 +1351,31 @@ function setupSchedule() {
                 return examDeadline > now;
             }) || mainSchedule[mainSchedule.length-1];
 
+            // ✅ SAFE ADD TASK LISTENER (Prevents crash since footer is removed)
+            
+// ✅ SAFE ADD TASK LISTENER
             const addTaskForm = document.getElementById('add-task-form');
-            if(addTaskForm) {
+            if (addTaskForm) {
                 const newForm = addTaskForm.cloneNode(true);
                 addTaskForm.parentNode.replaceChild(newForm, addTaskForm);
+                
                 newForm.addEventListener('submit', (e) => {
                     e.preventDefault();
-                    const inp = document.getElementById('new-task-input');
-                    const typeSelect = document.getElementById('new-task-type');
-                    const subSelect = document.getElementById('new-task-subject');
-                    if(inp.value.trim()) { 
-                        addTask(inp.value.trim(), typeSelect.value, subSelect.value); 
-                        inp.value = ''; 
+                    const input = document.getElementById('new-task-input');
+                    if (input && input.value.trim()) {
+                        
+                        // Safe selection of values without optional chaining
+                        const typeEl = document.getElementById('new-task-type');
+                        const subEl = document.getElementById('new-task-subject');
+                        
+                        const type = typeEl ? typeEl.value : 'main';
+                        const subject = subEl ? subEl.value : 'General';
+                        
+                        addTask(input.value.trim(), type, subject);
+                        input.value = '';
                     }
                 });
             }
-
             // Setup Mistake Form Listener
             const mistakeForm = document.getElementById('mistake-form');
             if(mistakeForm) {
@@ -1750,8 +1770,332 @@ function renderDailyHadith() {
     if(textEl) textEl.textContent = `"${selected.text}"`;
     if(sourceEl) sourceEl.textContent = selected.source;
 }
-        // Global functions
+        
+
+
+// ======================================================
+        // 🧠 ADVANCED SMART MIX ENGINE (Context-Aware Fix)
+        // ======================================================
+
+        // --- 1. CONFIGURATION: THE POINTS SYSTEM ---
+        const POINT_RULES = {
+            Physics: 4,
+            Chemistry: 3,
+            HighYieldBio: 3, 
+            StandardBio: 2
+        };
+
+        const HIGH_YIELD_TOPICS = [
+            "Sexual Reproduction in Plants", 
+            "Principles of Inheritance", 
+            "Molecular Basis of Inheritance", 
+            "Evolution"
+        ];
+
+        function getTestPoints(subject, topic) {
+            if (subject === 'Physics') return POINT_RULES.Physics;
+            if (subject === 'Chemistry') return POINT_RULES.Chemistry;
+            if (subject === 'Botany' || subject === 'Zoology' || subject === 'Biology') {
+                const isHighYield = HIGH_YIELD_TOPICS.some(h => topic.includes(h));
+                return isHighYield ? POINT_RULES.HighYieldBio : POINT_RULES.StandardBio;
+            }
+            return 1;
+        }
+
+        function getSubtopicPoints(testObj, subject, topic) {
+            const totalPts = getTestPoints(subject, topic);
+            const count = testObj.subs.length || 1;
+            return totalPts / count;
+        }
+
+        // --- 2. THE MATH ENGINE (Calculates Syllabus Stats) ---
+        function calculateSmartMath(type) {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            
+            let targetDate, syllabus;
+            
+            if (type === 'main') {
+                targetDate = new Date('2026-02-07T00:00:00'); 
+                syllabus = state.nextExam ? state.nextExam.syllabus : [];
+            } else {
+                targetDate = new Date('2026-02-12T00:00:00');
+                syllabus = typeof backlogPlan !== 'undefined' ? backlogPlan.syllabus : [];
+            }
+
+            const daysLeft = Math.max(1, Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24)));
+
+            let totalPoints = 0;
+            let earnedPoints = 0;
+            let pendingTasks = []; 
+
+            const allCompleted = new Set(Object.values(state.tasks).flat().filter(t => t.completed).map(t => t.text));
+            const plannedToday = new Set((state.tasks[formatDateKey(today)] || []).map(t => t.text));
+
+            syllabus.forEach(chap => {
+                if (type === 'backlog' && chap.phase > 1) return;
+
+                chap.dailyTests.forEach(dt => {
+                    const subPts = getSubtopicPoints(dt, chap.subject, chap.topic);
+                    
+                    dt.subs.forEach(sub => {
+                        totalPoints += subPts;
+                        const taskName = `Study: ${chap.topic} - ${sub}`;
+                        
+                        if (allCompleted.has(taskName) || state.dailyTestsAttempted[dt.name]) {
+                            earnedPoints += subPts;
+                        } else if (!plannedToday.has(taskName)) {
+                            pendingTasks.push({
+                                text: taskName,
+                                subject: chap.subject,
+                                points: subPts,
+                                chapter: chap.topic,
+                                type: type
+                            });
+                        }
+                    });
+                });
+            });
+
+            const remainingPoints = totalPoints - earnedPoints;
+            const dailyTargetPoints = remainingPoints / daysLeft;
+
+            return { daysLeft, totalPoints, remainingPoints, dailyTargetPoints, pendingTasks, syllabusRef: syllabus };
+        }
+
+        // --- 3. HELPER: CALCULATE POINTS ALREADY IN PLANNER ---
+        function getPlannerPointsForToday(mode, syllabusRef) {
+            const k = formatDateKey(state.selectedDate);
+            const tasks = state.tasks[k] || [];
+            let sum = 0;
+
+            tasks.forEach(t => {
+                // Try to find this task in the syllabus to get its point value
+                // We scan the syllabusRef passed from calculateSmartMath
+                syllabusRef.forEach(chap => {
+                    chap.dailyTests.forEach(dt => {
+                        dt.subs.forEach(sub => {
+                            if (t.text.includes(sub)) {
+                                sum += getSubtopicPoints(dt, chap.subject, chap.topic);
+                            }
+                        });
+                    });
+                });
+            });
+            return sum;
+        }
+
+  // ==========================================
+// ⚡ MODERN SMART MIX CONTROLLER
+// ==========================================
+let tempMixData = null; // Store data while modal is open
+
+window.generateSmartMix = function(mode = 'main') {
+    const math = calculateSmartMath(mode);
+    const alreadyPlannedPts = getPlannerPointsForToday(mode, math.syllabusRef);
+    const pointsNeeded = Math.max(0, math.dailyTargetPoints - alreadyPlannedPts);
+
+    // 1. If Target Met, show simple toast
+    if (pointsNeeded < 0.5) {
+        showToast("✅ Daily target already met! Great job.");
+        return;
+    }
+
+    // 2. Calculate the Candidates (The "Mix")
+    const subjectLoad = {};
+    math.pendingTasks.forEach(t => {
+        if (!subjectLoad[t.subject]) subjectLoad[t.subject] = [];
+        subjectLoad[t.subject].push(t);
+    });
+
+    let currentPoints = 0;
+    let mixPool = [];
+    const SAFE_CAP = 12; 
+
+    while (currentPoints < pointsNeeded && mixPool.length < SAFE_CAP && math.pendingTasks.length > 0) {
+        const heavySubject = Object.keys(subjectLoad).reduce((a, b) => 
+            subjectLoad[a].length > subjectLoad[b].length ? a : b
+        );
+
+        if (!subjectLoad[heavySubject] || subjectLoad[heavySubject].length === 0) break;
+
+        const task = subjectLoad[heavySubject].shift();
+        mixPool.push(task);
+        currentPoints += task.points;
+
+        const index = math.pendingTasks.indexOf(task);
+        if (index > -1) math.pendingTasks.splice(index, 1);
+    }
+
+    // Shuffle & Interleave
+    let finalMix = [];
+    let lastSubject = "";
+    while (mixPool.length > 0) {
+        let candidateIndex = mixPool.findIndex(t => t.subject !== lastSubject);
+        if (candidateIndex === -1) candidateIndex = 0;
+        const selected = mixPool[candidateIndex];
+        finalMix.push(selected);
+        lastSubject = selected.subject;
+        mixPool.splice(candidateIndex, 1);
+    }
+
+    // 3. STORE DATA FOR CONFIRMATION
+    tempMixData = finalMix;
+
+    // 4. POPULATE THE MODERN MODAL
+    document.getElementById('sm-target').innerText = math.dailyTargetPoints.toFixed(1);
+    document.getElementById('sm-planned').innerText = alreadyPlannedPts.toFixed(1);
+    document.getElementById('sm-gap').innerText = pointsNeeded.toFixed(1);
+    document.getElementById('sm-suggestion').innerHTML = `I have selected <b class="text-indigo-500">${finalMix.length} tasks</b> (${currentPoints.toFixed(1)} Pts) to bridge this gap perfectly.`;
+    
+    document.getElementById('smartMixSubtitle').innerText = mode === 'main' ? 'Exam Sprint Mode' : 'Backlog Recovery Mode';
+    
+    const header = document.getElementById('smartMixHeader');
+    if(mode === 'main') header.className = "relative h-32 bg-gradient-to-br from-brand-600 to-indigo-600 p-6 flex flex-col justify-between";
+    else header.className = "relative h-32 bg-gradient-to-br from-orange-500 to-red-500 p-6 flex flex-col justify-between";
+
+    // 5. OPEN MODAL ANIMATION
+    const modal = document.getElementById('smart-mix-modal');
+    const backdrop = document.getElementById('smartMixBackdrop');
+    const card = document.getElementById('smartMixCard');
+    
+    modal.classList.remove('hidden');
+    // Micro-delay for CSS transition
+    setTimeout(() => {
+        backdrop.classList.remove('opacity-0');
+        card.classList.remove('scale-95', 'opacity-0');
+        card.classList.add('scale-100', 'opacity-100');
+    }, 10);
+
+    // 6. ATTACH CONFIRM LISTENER
+    const btn = document.getElementById('btn-confirm-mix');
+    btn.onclick = () => confirmSmartMixExecute();
+};
+
+window.closeSmartMixModal = function() {
+    const modal = document.getElementById('smart-mix-modal');
+    const backdrop = document.getElementById('smartMixBackdrop');
+    const card = document.getElementById('smartMixCard');
+
+    backdrop.classList.add('opacity-0');
+    card.classList.remove('scale-100', 'opacity-100');
+    card.classList.add('scale-95', 'opacity-0');
+
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        tempMixData = null;
+    }, 300);
+};
+
+window.confirmSmartMixExecute = function() {
+    if(!tempMixData) return;
+
+    tempMixData.forEach(t => {
+        const key = formatDateKey(state.selectedDate);
+        if (!state.tasks[key]) state.tasks[key] = [];
+        state.tasks[key].push({
+            id: Date.now() + Math.random().toString(36).substr(2, 9), 
+            text: t.text, type: t.type, subject: t.subject, chapter: t.chapter, completed: false 
+        });
+    });
+    
+    saveData();
+    renderAll();
+    closeSmartMixModal();
+    
+    // Confetti!
+    confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+    });
+    
+    showToast(`🚀 Added ${tempMixData.length} tasks to your plan.`);
+};      
+
+// --- ✨ NEW VISUAL: POINTS REWARD TOAST (Fixed Centering) ---
+window.showPointsToast = function(points, current, target, subject, type) {
+    // 1. Remove existing to prevent stacking
+    const existing = document.getElementById('points-toast-wrapper');
+    if (existing) existing.remove();
+
+    // 2. Calculate Progress
+    const percent = Math.min(100, Math.round((current / target) * 100));
+    
+    // 3. Subject Colors
+    let gradient = "from-emerald-500 to-teal-500";
+    let icon = "zap";
+    
+    if (subject === 'Physics') {
+        gradient = "from-blue-500 to-indigo-500";
+        icon = "atom";
+    } else if (subject === 'Chemistry') {
+        gradient = "from-orange-500 to-amber-500";
+        icon = "flask-conical";
+    } else if (subject === 'Botany' || subject === 'Zoology' || subject === 'Biology') {
+        gradient = "from-green-500 to-emerald-600";
+        icon = "leaf";
+    }
+
+    // 4. Create WRAPPER (Positioning Only)
+    const wrapper = document.createElement('div');
+    wrapper.id = "points-toast-wrapper";
+    wrapper.className = "fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm pointer-events-none";
+
+    // 5. Create INNER CARD (Styling & Animation)
+    const toast = document.createElement('div');
+    toast.className = "bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-700 shadow-2xl rounded-2xl p-4 ring-1 ring-black/5 animate-in slide-in-from-bottom-4 fade-in duration-300 pointer-events-auto";
+    
+    // Extract color name for shadow (e.g., 'emerald' from 'from-emerald-500')
+    const colorName = gradient.split('-')[1];
+
+    toast.innerHTML = `
+        <div class="flex justify-between items-start mb-2">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white shadow-lg shadow-${colorName}-500/30">
+                    <i data-lucide="${icon}" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">${subject} • ${type === 'main' ? 'Exam' : 'Backlog'}</h4>
+                    <div class="text-xl font-black text-slate-800 dark:text-white flex items-center gap-1">
+                        +${points.toFixed(2)} <span class="text-sm font-bold text-slate-400">Pts</span>
+                    </div>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-[10px] font-bold uppercase text-slate-400">Target</div>
+                <div class="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    <span class="${percent >= 100 ? 'text-green-500' : ''}">${current.toFixed(1)}</span>
+                    <span class="opacity-50">/</span> 
+                    ${target.toFixed(1)}
+                </div>
+            </div>
+        </div>
+
+        <div class="relative h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-r ${gradient} transition-all duration-1000 ease-out" style="width: ${percent}%"></div>
+        </div>
+        <div class="mt-1 flex justify-between text-[9px] font-bold uppercase tracking-wider text-slate-400">
+            <span>Daily Progress</span>
+            <span>${percent}%</span>
+        </div>
+    `;
+
+    // 6. Assemble & Inject
+    wrapper.appendChild(toast);
+    document.body.appendChild(wrapper);
+
+    if (window.lucide) lucide.createIcons({ root: toast });
+
+    // 7. Remove after 3.5 seconds
+    setTimeout(() => {
+        toast.classList.add('animate-out', 'fade-out', 'slide-out-to-bottom-4');
+        setTimeout(() => wrapper.remove(), 300);
+    }, 3500);
+};
+   // --- 5. MANUAL ADD HOOK (With NEW Visuals) ---
         window.addTask = function(text, type = 'main', subject = 'General', chapter = null) {
+            // 1. Standard Add
             const key = formatDateKey(state.selectedDate);
             if (!state.tasks[key]) state.tasks[key] = [];
             state.tasks[key].push({
@@ -1759,32 +2103,101 @@ function renderDailyHadith() {
                 text, type, subject, chapter, completed: false 
             });
             saveData();
+            renderAll();
+
+            // 2. CHECK POINTS & SHOW UPDATED VISUALS
+            let pointsFound = 0;
+            let detectedType = 'main';
+            let detectedSubject = subject; // Use the manual subject selection initially
+            let syllabusRef = [];
+
+            // Scan Main
+            if (state.nextExam) {
+                state.nextExam.syllabus.forEach(chap => {
+                    chap.dailyTests.forEach(dt => {
+                        dt.subs.forEach(sub => {
+                            if (text.includes(sub)) {
+                                pointsFound = getSubtopicPoints(dt, chap.subject, chap.topic);
+                                detectedType = 'main';
+                                detectedSubject = chap.subject; 
+                                syllabusRef = state.nextExam.syllabus;
+                            }
+                        });
+                    });
+                });
+            }
+            
+            // Scan Backlog if not found
+            if (pointsFound === 0 && typeof backlogPlan !== 'undefined') {
+                backlogPlan.syllabus.forEach(chap => {
+                    chap.dailyTests.forEach(dt => {
+                        dt.subs.forEach(sub => {
+                            if (text.includes(sub)) {
+                                pointsFound = getSubtopicPoints(dt, chap.subject, chap.topic);
+                                detectedType = 'backlog';
+                                detectedSubject = chap.subject;
+                                syllabusRef = backlogPlan.syllabus;
+                            }
+                        });
+                    });
+                });
+            }
+
+            // 3. TRIGGER THE NEW VISUAL TOAST
+            if (pointsFound > 0) {
+                const math = calculateSmartMath(detectedType);
+                const planned = getPlannerPointsForToday(detectedType, syllabusRef);
+                
+                // ✨ CALL THE NEW VISUAL FUNCTION ✨
+                showPointsToast(pointsFound, planned, math.dailyTargetPoints, detectedSubject, detectedType);
+            } else {
+                // Generic toast for non-syllabus tasks
+                showToast("Task added to planner");
+            }
         };
+
+        // ✅ RESTORED FUNCTIONS
 
         window.deleteTask = function(id) {
             const key = formatDateKey(state.selectedDate);
             if(state.tasks[key]) {
                 state.tasks[key] = state.tasks[key].filter(t => t.id !== id);
                 saveData();
+                renderAll(); 
             }
         };
 
         window.deleteGroup = function(chapterName) {
-            const key = formatDateKey(state.selectedDate);
-            if(state.tasks[key]) {
-                 state.tasks[key] = state.tasks[key].filter(t => {
-                    let chap = t.chapter;
-                    if (!chap && t.text.startsWith("Study: ")) {
-                        const parts = t.text.replace("Study: ", "").split(" - ");
-                        if (parts.length > 1) chap = parts[0];
-                    }
-                    return chap !== chapterName;
-                });
-                saveData();
-                if (state.expandedFocusGroups[chapterName]) delete state.expandedFocusGroups[chapterName];
+            if(confirm(`Delete all tasks for "${chapterName}"?`)) {
+                const key = formatDateKey(state.selectedDate);
+                if(state.tasks[key]) {
+                     state.tasks[key] = state.tasks[key].filter(t => {
+                        let chap = t.chapter;
+                        if (!chap && t.text.startsWith("Study: ")) {
+                            const parts = t.text.replace("Study: ", "").split(" - ");
+                            if (parts.length > 1) chap = parts[0];
+                        }
+                        return chap !== chapterName;
+                    });
+                    saveData();
+                    if (state.expandedFocusGroups[chapterName]) delete state.expandedFocusGroups[chapterName];
+                    renderAll();
+                }
             }
         };
 
+        window.toggleTask = function(id) {
+            const key = formatDateKey(state.selectedDate);
+            if(state.tasks[key]) {
+                const t = state.tasks[key].find(x => x.id === id);
+                if(t) { 
+                    t.completed = !t.completed; 
+                    saveData();
+                    renderAll(); 
+                }
+            }
+        };     
+        
         window.toggleTask = function(id) {
             const key = formatDateKey(state.selectedDate);
             if(state.tasks[key]) {
@@ -2286,307 +2699,7 @@ window.renderLeaderboardList = function() {
     };
 
 
-// --- NEW: VIBRANT BALANCED MIX CARD ---
-let currentUnifiedSuggestion = [];
 
-
-
-// --- AI STRATEGY: BALANCED MIX LOGIC ---
-
-// 1. Helper: Define Difficulty Categories & Points
-function getTopicDetails(subject, topic) {
-    const t = (topic || '').toLowerCase();
-    const s = subject;
-
-    // Default: Easy / 1 Point
-    let category = 'Easy';
-    let points = 1;
-
-    // --- HARD (Physics, Organic Chem) - 4 Points ---
-    const isPhysics = s === 'Physics';
-    const isOrganic = s === 'Chemistry' && (t.includes('organic') || t.includes('hydro') || t.includes('halo') || t.includes('alcohol') || t.includes('aldehyde') || t.includes('amine') || t.includes('goc'));
-    
-    // Exception: EMI is Medium
-    const isEMI = t.includes('emi') || t.includes('electromagnetic') || t.includes('induction');
-
-    if ((isPhysics && !isEMI) || isOrganic) {
-        category = 'Hard';
-        points = 4;
-    }
-
-    // --- MEDIUM (Phys Chem, EMI, Bio Genetics/Repro) - 2.5 Points ---
-    const isPhysChem = s === 'Chemistry' && (t.includes('equilibrium') || t.includes('thermo') || t.includes('electro') || t.includes('kinetics') || t.includes('solution'));
-    const isBioGenetics = s === 'Biology' && (t.includes('inheritance') || t.includes('molecular') || t.includes('genetic') || t.includes('dna'));
-    const isBioRepro = s === 'Biology' && (t.includes('sexual reproduction') || t.includes('flowering'));
-
-    if (isEMI || isPhysChem || isBioGenetics || isBioRepro) {
-        category = 'Medium';
-        points = 2.5; // Slightly higher than easy, lower than hard
-    }
-
-    return { category, points };
-}
-
-window.checkStudyPace = function() {
-    const container = document.getElementById('ai-strategy-container');
-    if (!container) return;
-    
-    container.innerHTML = ''; 
-    container.classList.remove('hidden');
-
-    const today = new Date(); 
-    today.setHours(0,0,0,0);
-    const k = formatDateKey(state.selectedDate);
-    const todaysTasks = state.tasks[k] || [];
-    
-    // HISTORY CHECK
-    const allCompleted = new Set();
-    Object.values(state.tasks).flat().forEach(t => { if (t.completed) allCompleted.add(t.text); });
-
-    // --- STEP 1: CALCULATE DEADLINES & RATES ---
-    function calculateTrackMetrics(syllabus, deadlineDate, trackType) {
-        if (!syllabus || !deadlineDate) return { pending: [], rate: 0 };
-        
-        let effectiveDeadline = new Date(deadlineDate);
-        
-        // RULE: Main Test must be completed 1 day BEFORE exam
-        if (trackType === 'main') {
-            effectiveDeadline.setDate(effectiveDeadline.getDate() - 1);
-        } else {
-            // RULE: Backlog follows Phase deadlines
-            const planStart = backlogPlan.startDate || new Date();
-            const diff = Math.ceil((new Date() - planStart) / (1000 * 60 * 60 * 24));
-            let currentPhase = 1;
-            if(diff > 15) currentPhase = 2;
-            if(diff > 30) currentPhase = 3;
-            if(diff > 45) currentPhase = 4;
-            
-            // Set deadline to end of current phase
-            effectiveDeadline = new Date(planStart);
-            effectiveDeadline.setDate(planStart.getDate() + (currentPhase * 15));
-        }
-
-        let daysLeft = Math.ceil((effectiveDeadline - today) / (1000 * 60 * 60 * 24));
-        if (daysLeft < 1) daysLeft = 1; 
-
-        let totalPoints = 0;
-        let pendingTasks = [];
-
-        syllabus.forEach(chapter => {
-            // Filter Backlog Phase
-            if (trackType === 'backlog') {
-                const planStart = backlogPlan.startDate || new Date();
-                const diff = Math.ceil((new Date() - planStart) / (1000 * 60 * 60 * 24));
-                let phase = 1;
-                if(diff > 15) phase = 2;
-                if(diff > 30) phase = 3;
-                if(diff > 45) phase = 4;
-                if (chapter.phase && chapter.phase !== phase) return;
-            }
-
-            const { category, points } = getTopicDetails(chapter.subject, chapter.topic);
-
-            chapter.dailyTests.forEach(dt => {
-                const remainingSubs = dt.subs.filter(sub => !allCompleted.has(`Study: ${chapter.topic} - ${sub}`));
-                if (remainingSubs.length === 0) return;
-
-                const isPlannedToday = remainingSubs.some(sub => todaysTasks.some(t => t.text === `Study: ${chapter.topic} - ${sub}`));
-
-                if (!isPlannedToday) {
-                    // Normalize points based on how much of the Daily Test is left
-                    const ratio = remainingSubs.length / dt.subs.length;
-                    const adjustedPoints = points * ratio;
-
-                    pendingTasks.push({
-                        name: dt.name,
-                        subject: chapter.subject,
-                        topic: chapter.topic,
-                        category: category, // Hard, Medium, or Easy
-                        points: adjustedPoints,
-                        rawPoints: points,
-                        track: trackType,
-                        subs: remainingSubs
-                    });
-                    totalPoints += adjustedPoints;
-                }
-            });
-        });
-
-        return { pending: pendingTasks, rate: totalPoints / daysLeft };
-    }
-
-    const mainMetrics = calculateTrackMetrics(state.nextExam.syllabus, state.nextExam.date, 'main');
-    const backlogMetrics = typeof backlogPlan !== 'undefined' ? 
-        calculateTrackMetrics(backlogPlan.syllabus, backlogPlan.date, 'backlog') : { pending: [], rate: 0 };
-
-    // --- STEP 2: CALCULATE DEFICIT ---
-    // Aggression factor 1.1 ensures we stay slightly ahead
-    const totalDailyRate = (mainMetrics.rate + backlogMetrics.rate) * 1.1;
-    
-    let manualPoints = 0;
-    todaysTasks.forEach(t => { 
-        manualPoints += getTopicDetails(t.subject, t.chapter).points; 
-    });
-
-    const deficit = totalDailyRate - manualPoints;
-    
-    // Only suggest if we have a real deficit
-    if (deficit <= 0.5 || (mainMetrics.pending.length === 0 && backlogMetrics.pending.length === 0)) return;
-
-    // --- STEP 3: THE SMART MIX ALGORITHM (60/25/15) ---
-    
-    // Combine all pending tasks
-    let allPending = [...mainMetrics.pending, ...backlogMetrics.pending];
-    
-    // Buckets
-    const buckets = {
-        Hard: allPending.filter(t => t.category === 'Hard'),
-        Medium: allPending.filter(t => t.category === 'Medium'),
-        Easy: allPending.filter(t => t.category === 'Easy')
-    };
-
-    // Sort buckets by Track Priority (Main > Backlog) then Points
-    const sortFn = (a, b) => {
-        if (a.track === 'main' && b.track !== 'main') return -1;
-        if (a.track !== 'main' && b.track === 'main') return 1;
-        return b.points - a.points;
-    };
-    buckets.Hard.sort(sortFn);
-    buckets.Medium.sort(sortFn);
-    buckets.Easy.sort(sortFn);
-
-    // Targets based on Deficit
-    // 60% Hard, 25% Medium, 15% Easy
-    let targets = {
-        Hard: deficit * 0.60,
-        Medium: deficit * 0.25,
-        Easy: deficit * 0.15
-    };
-
-    let suggestions = [];
-    let currentFill = { Hard: 0, Medium: 0, Easy: 0 };
-
-    // Helper to fill a specific bucket
-    function fillBucket(type, targetAmount) {
-        for (let task of buckets[type]) {
-            if (currentFill[type] >= targetAmount) break;
-            if (suggestions.includes(task)) continue; // Avoid dupes
-
-            suggestions.push(task);
-            currentFill[type] += task.points;
-        }
-    }
-
-    // 1. First Pass: Try to fill exact percentages
-    fillBucket('Hard', targets.Hard);
-    fillBucket('Medium', targets.Medium);
-    fillBucket('Easy', targets.Easy);
-
-    // 2. Overflow Handling (Waterfalls down)
-    // If we ran out of Hard tasks, move credit to Medium. If out of Medium, move to Easy.
-    // And vice versa to ensure TOTAL points are met.
-    
-    const totalFilled = currentFill.Hard + currentFill.Medium + currentFill.Easy;
-    const remainingDeficit = deficit - totalFilled;
-
-    if (remainingDeficit > 0.5) {
-        // Just fill the rest with whatever is available, prioritizing Main track
-        const remainingTasks = allPending.filter(t => !suggestions.includes(t)).sort(sortFn);
-        for (let task of remainingTasks) {
-            if ((currentFill.Hard + currentFill.Medium + currentFill.Easy) >= deficit) break;
-            suggestions.push(task);
-            currentFill[task.category] += task.points;
-        }
-    }
-
-    currentUnifiedSuggestion = suggestions;
-
-    if (suggestions.length > 0) {
-        const totalPointsDisplay = Math.round(suggestions.reduce((sum, t) => sum + t.points, 0));
-        
-        // Count for UI Badge
-        const hardCount = suggestions.filter(t => t.category === 'Hard').length;
-        const medCount = suggestions.filter(t => t.category === 'Medium').length;
-        const easyCount = suggestions.filter(t => t.category === 'Easy').length;
-
-        const html = `
-        <div class="relative overflow-hidden rounded-[2rem] p-6 bg-gradient-to-br from-indigo-900 via-slate-900 to-black border border-indigo-500/30 shadow-2xl text-white mb-6 group animate-in slide-in-from-top-2">
-            <div class="absolute top-0 right-0 p-8 opacity-20">
-                <i data-lucide="bar-chart-2" class="w-32 h-32 text-indigo-400"></i>
-            </div>
-
-            <div class="relative z-10 flex flex-col md:flex-row gap-6 items-center justify-between">
-                <div class="flex-1">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-300">Smart Study Mix</span>
-                        <div class="h-px bg-indigo-500/50 flex-1"></div>
-                    </div>
-                    
-                    <h3 class="text-xl md:text-2xl font-bold leading-tight mb-2">
-                        Today's Balanced Plan
-                    </h3>
-                    
-                    <div class="flex flex-wrap gap-2 mt-3">
-                        ${hardCount > 0 ? `<div class="flex items-center gap-1.5 bg-red-500/20 border border-red-500/30 px-2.5 py-1 rounded-lg">
-                            <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                            <span class="text-xs font-bold text-red-100">${hardCount} Hard</span>
-                        </div>` : ''}
-                        ${medCount > 0 ? `<div class="flex items-center gap-1.5 bg-yellow-500/20 border border-yellow-500/30 px-2.5 py-1 rounded-lg">
-                            <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
-                            <span class="text-xs font-bold text-yellow-100">${medCount} Med</span>
-                        </div>` : ''}
-                        ${easyCount > 0 ? `<div class="flex items-center gap-1.5 bg-green-500/20 border border-green-500/30 px-2.5 py-1 rounded-lg">
-                            <span class="w-2 h-2 rounded-full bg-green-500"></span>
-                            <span class="text-xs font-bold text-green-100">${easyCount} Easy</span>
-                        </div>` : ''}
-                    </div>
-                    
-                    <p class="text-slate-400 text-xs mt-3 italic">
-                        "60% Heavy lifting, 40% Momentum."
-                    </p>
-                </div>
-
-                <button onclick="acceptUnifiedPlan()" class="w-full md:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 active:scale-95">
-                    <i data-lucide="plus" class="w-5 h-5"></i>
-                    Add These ${suggestions.length} Tasks
-                </button>
-            </div>
-        </div>`;
-
-        container.innerHTML = html;
-        if (window.lucide) lucide.createIcons({ root: container });
-    }
-};
-
-window.acceptUnifiedPlan = function() {
-    if (!currentUnifiedSuggestion || currentUnifiedSuggestion.length === 0) return;
-
-    let addedCount = 0;
-    const key = formatDateKey(state.selectedDate);
-
-    currentUnifiedSuggestion.forEach(item => {
-        item.subs.forEach(sub => {
-            const taskText = `Study: ${item.topic} - ${sub}`;
-            // Check dupes
-            const exists = (state.tasks[key] || []).some(t => t.text === taskText);
-            
-            if (!exists) {
-                addTask(taskText, item.track, item.subject, item.topic);
-                addedCount++;
-            }
-        });
-    });
-
-    saveData();
-    renderAll();
-
-    // Celebration
-    if (window.confetti) {
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#6366f1', '#f97316'] });
-    }
-    
-    showToast(`🚀 Balanced Plan Activated! Added ${addedCount} topics to your list.`);
-};
 
 // --- PLANNER FUNCTIONS ---
 
@@ -2977,11 +3090,7 @@ window.renderAll = function() {
     // Performance Optimization: Lazy Rendering
     if (state.activeView === 'overview') {
         renderTasks();
-        // FORCE UPDATE: Ensure AI checks pace every time the UI updates (e.g. deletions)
-        if (typeof checkStudyPace === 'function') {
-            checkStudyPace(); 
-        }
-    } else if (state.activeView === 'target') {
+            } else if (state.activeView === 'target') {
         renderSyllabus('main');
     } else if (state.activeView === 'backlog') {
         renderSyllabus('backlog');
@@ -3008,174 +3117,295 @@ window.renderTasks = renderTasks;
             if(els.agendaDate) els.agendaDate.textContent = dateStr;
         }
 
+// ==========================================
+// 🚀 TACTICAL DASHBOARD V3 (Smart Analytics)
+// ==========================================
 window.renderStats = function() {
     const container = document.getElementById('stats-container');
     if (!container) return;
 
-    // 1. GATHER HISTORY
-    const allCompleted = new Set();
-    if (state.tasks) {
-        Object.values(state.tasks).flat().forEach(t => {
-            if (t.completed) allCompleted.add(t.text);
-        });
-    }
+    // --- 1. CORE DATA CALCULATION ---
+    const mathMain = calculateSmartMath('main');
+    const mathBacklog = calculateSmartMath('backlog');
 
-    // --- CALCULATE DATA ---
-    const nextExam = state.nextExam;
-    let daysLeft = 0;
-    let primaryPercent = 0;
+    // Helper: Calculate Points Completed TODAY (Real User Data)
+    const getDailyExecution = (syllabusRef) => {
+        const k = formatDateKey(state.selectedDate);
+        const tasks = state.tasks[k] || [];
+        let planned = 0;
+        let completed = 0;
 
-    if (nextExam) {
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const examDate = new Date(nextExam.date);
-        daysLeft = Math.ceil((examDate - today) / (1000 * 60 * 60 * 24));
-        
-        let totalSubTopics = 0;
-        let doneSubTopics = 0;
-        
-        nextExam.syllabus.forEach(chapter => {
-            chapter.dailyTests.forEach(dt => {
-                const isTestDone = state.dailyTestsAttempted[dt.name];
-                dt.subs.forEach(sub => {
-                    totalSubTopics++;
-                    if (isTestDone || allCompleted.has(`Study: ${chapter.topic} - ${sub}`)) doneSubTopics++;
+        tasks.forEach(t => {
+            let points = 0;
+            syllabusRef.forEach(chap => {
+                chap.dailyTests.forEach(dt => {
+                    dt.subs.forEach(sub => {
+                        if (t.text.includes(sub)) {
+                             points = getSubtopicPoints(dt, chap.subject, chap.topic);
+                        }
+                    });
                 });
             });
+            if(points > 0) {
+                planned += points;
+                if(t.completed) completed += points;
+            }
         });
-        primaryPercent = totalSubTopics === 0 ? 0 : Math.round((doneSubTopics / totalSubTopics) * 100);
-    }
+        return { planned, completed };
+    };
 
-    let currentPhase = 1;
-    let totalPercent = 0;
-    let phasePercent = 0;
+    const execMain = getDailyExecution(mathMain.syllabusRef);
+    const execBacklog = getDailyExecution(mathBacklog.syllabusRef);
 
-    if (typeof backlogPlan !== 'undefined') {
-        const planStart = new Date(backlogPlan.startDate);
-        const today = new Date();
-        const diffDays = Math.ceil(Math.abs(today - planStart) / (1000 * 60 * 60 * 24)); 
-        if(diffDays > 15) currentPhase = 2;
-        if(diffDays > 30) currentPhase = 3;
-        if(diffDays > 45) currentPhase = 4;
-        if(diffDays > 60) currentPhase = 4; 
+    // --- 2. VELOCITY STATUS LOGIC ---
+    const getVelocityStatus = (done, target) => {
+        if (target <= 0.1) return { label: "GOAL MET", color: "text-emerald-400", bg: "bg-emerald-500", percent: 100 };
+        const pct = (done / target) * 100;
+        if (pct >= 100) return { label: "CRUSHING IT", color: "text-emerald-400", bg: "bg-emerald-500", percent: Math.min(100, pct) };
+        if (pct >= 80) return { label: "ON TRACK", color: "text-teal-400", bg: "bg-teal-500", percent: pct };
+        if (pct >= 50) return { label: "WORKING", color: "text-yellow-400", bg: "bg-yellow-500", percent: pct };
+        if (pct > 0) return { label: "LAGGING", color: "text-orange-400", bg: "bg-orange-500", percent: pct };
+        return { label: "NOT STARTED", color: "text-slate-400", bg: "bg-slate-500", percent: 0 };
+    };
 
-        let totalBacklogSubs = 0;
-        let doneBacklogSubs = 0;
-        let phaseTotalSubs = 0;
-        let phaseDoneSubs = 0;
+    const velMain = getVelocityStatus(execMain.completed, mathMain.dailyTargetPoints);
+    const velBacklog = getVelocityStatus(execBacklog.completed, mathBacklog.dailyTargetPoints);
 
-        backlogPlan.syllabus.forEach(chapter => {
-            const isPhase = chapter.phase === currentPhase;
-            chapter.dailyTests.forEach(dt => {
+    // --- 3. INTELLIGENT SUBJECT BREAKDOWN ---
+    const getSubjectBreakdown = (syllabus) => {
+        const stats = { 
+            Physics: { total: 0, done: 0 }, 
+            Chemistry: { total: 0, done: 0 }, 
+            Biology: { total: 0, done: 0 } 
+        };
+        const allCompleted = new Set(Object.values(state.tasks).flat().filter(t => t.completed).map(t => t.text));
+
+        syllabus.forEach(chap => {
+            let subj = chap.subject;
+            if(subj === 'Botany' || subj === 'Zoology') subj = 'Biology';
+            chap.dailyTests.forEach(dt => {
                 const isTestDone = state.dailyTestsAttempted[dt.name];
                 dt.subs.forEach(sub => {
-                    totalBacklogSubs++;
-                    if (isPhase) phaseTotalSubs++;
-                    if (isTestDone || allCompleted.has(`Study: ${chapter.topic} - ${sub}`)) {
-                        doneBacklogSubs++;
-                        if (isPhase) phaseDoneSubs++;
+                    if(stats[subj]) {
+                        stats[subj].total++;
+                        if(isTestDone || allCompleted.has(`Study: ${chap.topic} - ${sub}`)) {
+                            stats[subj].done++;
+                        }
                     }
                 });
             });
         });
+        return stats;
+    };
 
-        totalPercent = totalBacklogSubs === 0 ? 0 : Math.round((doneBacklogSubs / totalBacklogSubs) * 100);
-        phasePercent = phaseTotalSubs === 0 ? 0 : Math.round((phaseDoneSubs / phaseTotalSubs) * 100);
-    }
+    const statsMain = getSubjectBreakdown(mathMain.syllabusRef);
+    const statsBacklog = getSubjectBreakdown(mathBacklog.syllabusRef);
 
-    // --- RENDER BRIGHT & COMPACT UI ---
+    // --- 4. ANALYTICS HELPER: DETECT WEAKNESS ---
+    const renderSmartSubject = (subj, data, allData) => {
+        const pct = data.total > 0 ? Math.round((data.done / data.total) * 100) : 0;
+        
+        // Calculate Average of All Subjects in this Exam
+        let totalPct = 0;
+        let count = 0;
+        Object.values(allData).forEach(d => {
+            if(d.total > 0) {
+                totalPct += (d.done / d.total) * 100;
+                count++;
+            }
+        });
+        const avg = count > 0 ? totalPct / count : 0;
+        
+        // Determine Status
+        let status = "Balanced";
+        let statusColor = "text-slate-400";
+        let barColor = "bg-slate-400";
+        let icon = "minus";
+
+        if(pct < avg - 5) {
+            status = "Lagging";
+            statusColor = "text-rose-500";
+            barColor = "bg-rose-500";
+            icon = "arrow-down";
+        } else if (pct > avg + 5) {
+            status = "Strong";
+            statusColor = "text-emerald-500";
+            barColor = "bg-emerald-500";
+            icon = "arrow-up";
+        } else {
+            // Default colors per subject if balanced
+            if(subj === 'Physics') barColor = "bg-blue-500";
+            if(subj === 'Chemistry') barColor = "bg-cyan-500";
+            if(subj === 'Biology') barColor = "bg-green-500";
+        }
+
+        return `
+            <div class="mb-3 last:mb-0 group">
+                <div class="flex justify-between items-end mb-1">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 w-14">${subj}</span>
+                        ${status === 'Lagging' ? `<span class="text-[9px] font-bold px-1 rounded bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300 flex items-center gap-0.5"><i data-lucide="alert-circle" class="w-2 h-2"></i> Lagging</span>` : ''}
+                        ${status === 'Strong' ? `<span class="text-[9px] font-bold px-1 rounded bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 flex items-center gap-0.5"><i data-lucide="zap" class="w-2 h-2"></i> Strong</span>` : ''}
+                    </div>
+                    <span class="text-xs font-bold text-slate-700 dark:text-white">${pct}%</span>
+                </div>
+                <div class="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-full ${barColor} transition-all duration-1000 group-hover:opacity-80" style="width: ${pct}%"></div>
+                </div>
+            </div>
+        `;
+    };
+
+    // Find the absolute weakest subject across both exams
+    const findWeakest = () => {
+        let lowest = 101;
+        let name = "None";
+        const check = (stats) => {
+            Object.entries(stats).forEach(([k, v]) => {
+                const p = v.total > 0 ? (v.done / v.total) * 100 : 0;
+                if(p < lowest) { lowest = p; name = k; }
+            });
+        };
+        check(statsMain);
+        check(statsBacklog);
+        return name;
+    };
+    const weakestSub = findWeakest();
+
+    // --- 5. RENDER HTML ---
     container.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
             
-            <div class="md:col-span-3 relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-indigo-500 via-purple-600 to-blue-600 text-white shadow-2xl shadow-indigo-500/30 group hover:scale-[1.01] transition-transform duration-300">
-                <div class="absolute -right-8 -top-8 w-40 h-40 bg-white/20 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
-                <div class="absolute -left-8 -bottom-8 w-40 h-40 bg-cyan-400/20 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
+            <div class="relative overflow-hidden rounded-3xl p-6 bg-slate-900 dark:bg-black text-white shadow-xl flex flex-col justify-between group border border-slate-800">
+                <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                    <i data-lucide="zap" class="w-32 h-32 text-white"></i>
+                </div>
                 
-                <div class="relative z-10 flex flex-col h-full justify-between">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-[10px] font-bold uppercase tracking-wider mb-2 shadow-sm">
-                                <i data-lucide="crosshair" class="w-3 h-3 text-cyan-300"></i> Main Target
-                            </div>
-                            <h2 class="text-2xl md:text-3xl font-black text-white drop-shadow-sm truncate pr-2">
-                                ${nextExam ? nextExam.name : 'No Exam'}
-                            </h2>
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                            Main Target
                         </div>
                         <div class="text-right">
-                            <span class="block text-4xl md:text-5xl font-black tracking-tighter leading-none">${daysLeft}</span>
-                            <span class="text-[9px] font-bold uppercase opacity-80 tracking-widest">Days Left</span>
+                            <div class="text-2xl font-black leading-none">${mathMain.daysLeft}</div>
+                            <div class="text-[9px] uppercase font-bold text-slate-500">Days Left</div>
                         </div>
                     </div>
 
-                    <div class="mt-6">
-                        <div class="flex justify-between items-end mb-2 px-1">
-                            <span class="text-xs font-bold text-indigo-100 uppercase">Mission Progress</span>
-                            <span class="text-2xl font-black">${primaryPercent}%</span>
+                    <div class="mb-6">
+                        <div class="text-4xl font-black tracking-tight mb-1">
+                            ${execMain.completed.toFixed(1)} <span class="text-xl text-slate-500 font-bold">/ ${mathMain.dailyTargetPoints.toFixed(1)}</span>
                         </div>
-                        <div class="h-5 w-full bg-black/20 rounded-full p-1 backdrop-blur-sm shadow-inner border border-white/10">
-                            <div class="h-full rounded-full bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-400 relative overflow-hidden shadow-lg shadow-cyan-400/30 transition-all duration-1000 ease-out" style="width: ${primaryPercent}%">
-                                <div class="absolute inset-0 bg-white/30 w-full -translate-x-full animate-[shimmer_1.5s_infinite]"></div>
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Daily Points Completed</div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="relative flex h-2 w-2">
+                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${velMain.bg} opacity-75"></span>
+                                  <span class="relative inline-flex rounded-full h-2 w-2 ${velMain.bg}"></span>
+                                </span>
+                                <span class="text-xs font-bold ${velMain.color}">${velMain.label}</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-500">${Math.round(velMain.percent)}%</span>
+                        </div>
+                        <div class="h-4 w-full bg-slate-800 rounded-full overflow-hidden border border-white/5">
+                            <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all duration-1000 relative" style="width: ${velMain.percent}%">
+                                <div class="absolute inset-0 bg-white/20 w-full -translate-x-full animate-[shimmer_2s_infinite]"></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="md:col-span-2 grid grid-cols-2 gap-4">
+            <div class="relative overflow-hidden rounded-3xl p-6 bg-slate-900 dark:bg-black text-white shadow-xl flex flex-col justify-between group border border-slate-800">
+                <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                    <i data-lucide="history" class="w-32 h-32 text-orange-500"></i>
+                </div>
                 
-                <div class="relative overflow-hidden rounded-3xl p-4 bg-gradient-to-br from-emerald-400 to-cyan-600 text-white shadow-lg shadow-emerald-500/20 hover:-translate-y-1 transition-transform">
-                    <div class="relative z-10 flex flex-col h-full justify-between">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-[9px] font-bold uppercase text-emerald-100 tracking-wider mb-0.5">Focus</p>
-                                <h3 class="text-lg font-bold leading-tight">Phase ${currentPhase}</h3>
-                            </div>
-                            <div class="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
-                                <i data-lucide="zap" class="w-4 h-4 text-white"></i>
-                            </div>
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-500/10 backdrop-blur-md border border-orange-500/20 text-[10px] font-bold uppercase tracking-wider text-orange-200">
+                            Backlog Recovery
                         </div>
-                        
-                        <div class="mt-3">
-                            <div class="flex justify-between text-[10px] font-bold mb-1 opacity-90">
-                                <span>Sprint</span>
-                                <span>${phasePercent}%</span>
+                        <div class="text-right">
+                            <div class="text-2xl font-black leading-none text-orange-500">${mathBacklog.daysLeft}</div>
+                            <div class="text-[9px] uppercase font-bold text-slate-500">Days Left</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <div class="text-4xl font-black tracking-tight mb-1 text-white">
+                            ${execBacklog.completed.toFixed(1)} <span class="text-xl text-slate-500 font-bold">/ ${mathBacklog.dailyTargetPoints.toFixed(1)}</span>
+                        </div>
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Daily Points Completed</div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="relative flex h-2 w-2">
+                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${velBacklog.bg} opacity-75"></span>
+                                  <span class="relative inline-flex rounded-full h-2 w-2 ${velBacklog.bg}"></span>
+                                </span>
+                                <span class="text-xs font-bold ${velBacklog.color}">${velBacklog.label}</span>
                             </div>
-                            <div class="h-3 w-full bg-black/10 rounded-full overflow-hidden">
-                                <div class="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.6)] rounded-full transition-all duration-1000" style="width: ${phasePercent}%"></div>
+                            <span class="text-xs font-bold text-slate-500">${Math.round(velBacklog.percent)}%</span>
+                        </div>
+                        <div class="h-4 w-full bg-slate-800 rounded-full overflow-hidden border border-white/5">
+                            <div class="h-full bg-gradient-to-r from-orange-500 to-red-500 shadow-[0_0_15px_rgba(249,115,22,0.5)] transition-all duration-1000 relative" style="width: ${velBacklog.percent}%">
+                                <div class="absolute inset-0 bg-white/20 w-full -translate-x-full animate-[shimmer_2s_infinite]"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="relative overflow-hidden rounded-3xl p-4 bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg shadow-orange-500/20 hover:-translate-y-1 transition-transform">
-                    <div class="relative z-10 flex flex-col h-full justify-between">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-[9px] font-bold uppercase text-orange-100 tracking-wider mb-0.5">Total</p>
-                                <h3 class="text-lg font-bold leading-tight">Backlog</h3>
-                            </div>
-                            <div class="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
-                                <i data-lucide="layers" class="w-4 h-4 text-white"></i>
-                            </div>
-                        </div>
-
-                        <div class="mt-3">
-                            <div class="flex justify-between text-[10px] font-bold mb-1 opacity-90">
-                                <span>Recovered</span>
-                                <span>${totalPercent}%</span>
-                            </div>
-                            <div class="h-3 w-full bg-black/10 rounded-full overflow-hidden">
-                                <div class="h-full bg-gradient-to-r from-yellow-300 to-white shadow-[0_0_10px_rgba(255,200,0,0.6)] rounded-full transition-all duration-1000" style="width: ${totalPercent}%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
             </div>
+
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm flex flex-col relative overflow-hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4 text-brand-500"></i> Subject Analysis
+                    </h4>
+                    ${weakestSub !== "None" ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 animate-pulse">Focus: ${weakestSub}</span>` : ''}
+                </div>
+
+                <div class="grid grid-cols-2 gap-6 h-full">
+                    <div>
+                        <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-1">
+                            Main Exam
+                        </div>
+                        <div class="space-y-1">
+                            ${renderSmartSubject('Physics', statsMain.Physics, statsMain)}
+                            ${renderSmartSubject('Chemistry', statsMain.Chemistry, statsMain)}
+                            ${renderSmartSubject('Biology', statsMain.Biology, statsMain)}
+                        </div>
+                    </div>
+
+                    <div class="border-l border-slate-100 dark:border-slate-800 pl-6">
+                        <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-1">
+                            Backlog
+                        </div>
+                        <div class="space-y-1">
+                            ${renderSmartSubject('Physics', statsBacklog.Physics, statsBacklog)}
+                            ${renderSmartSubject('Chemistry', statsBacklog.Chemistry, statsBacklog)}
+                            ${renderSmartSubject('Biology', statsBacklog.Biology, statsBacklog)}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <p class="text-[10px] text-slate-400 italic text-center">
+                        <i data-lucide="info" class="w-3 h-3 inline mr-1"></i>
+                        Subjects marked "Lagging" are >5% behind your average pace.
+                    </p>
+                </div>
+            </div>
+
         </div>
     `;
 
-    if (window.lucide) lucide.createIcons({ root: container });
+    if(window.lucide) lucide.createIcons({ root: container });
 };
  function createTaskElementHTML(t, isSubTask = false) {
             // Updated Styles for "Pill" look
@@ -3432,31 +3662,26 @@ window.renderSyllabus = function(type, searchQuery = '') {
     const rawData = type === 'main' ? state.nextExam.syllabus : backlogPlan.syllabus;
     
     // --- 4. DEADLINE & PROGRESS LOGIC ---
-    // If we are in Backlog mode, update the Header UI to show Phase Deadline
     if(type === 'backlog') {
         const planStart = backlogPlan.startDate || new Date();
         const now = new Date();
         const diffTime = Math.abs(now - planStart);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
         
-        // Determine Active Phase
         let currentPhase = 1;
         if(diffDays > 15) currentPhase = 2;
         if(diffDays > 30) currentPhase = 3;
         if(diffDays > 45) currentPhase = 4;
 
-        // Calculate Phase End Date
         const phaseEndDate = new Date(planStart);
         phaseEndDate.setDate(planStart.getDate() + (currentPhase * 15));
         
-        // Update DOM elements (Assuming you have these IDs in your HTML)
-        const deadlineEl = document.getElementById('backlog-deadline-display'); // You might need to add this ID to your HTML date card
+        const deadlineEl = document.getElementById('backlog-deadline-display');
         if(deadlineEl) deadlineEl.innerText = phaseEndDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         
         const phaseLabelEl = document.getElementById('backlog-phase-label');
         if(phaseLabelEl) phaseLabelEl.innerText = `Phase ${currentPhase} Active`;
     }
-    // ------------------------------------
 
     const allCompleted = new Set(Object.values(state.tasks).flat().filter(t => t.completed).map(t => t.text));
     const k = formatDateKey(state.selectedDate);
@@ -3464,11 +3689,9 @@ window.renderSyllabus = function(type, searchQuery = '') {
     const lowerQuery = searchQuery.toLowerCase().trim();
     const fragment = document.createDocumentFragment();
     
-    // Phase & Unit Trackers
     let lastPhase = 0;
     let lastUnit = "";
 
-    // Active Phase Calculation for highlighting
     let activePhaseUI = 1;
     if(type === 'backlog') {
         const planStart = backlogPlan.startDate;
@@ -3479,12 +3702,11 @@ window.renderSyllabus = function(type, searchQuery = '') {
     }
 
     rawData.forEach((item, chapterIdx) => {
-        // --- 1. PHASE DIVIDER WITH DATES ---
+        // --- 1. PHASE DIVIDER ---
         if(item.phase && item.phase !== lastPhase) {
             lastPhase = item.phase;
-            lastUnit = ""; // Reset unit on new phase
+            lastUnit = ""; 
             
-            // Calculate Dates
             const pStart = new Date(backlogPlan.startDate);
             pStart.setDate(pStart.getDate() + ((item.phase-1)*15));
             const pEnd = new Date(backlogPlan.startDate);
@@ -3507,7 +3729,7 @@ window.renderSyllabus = function(type, searchQuery = '') {
             fragment.appendChild(divider);
         }
 
-        // --- 2. UNIT HEADER (New!) ---
+        // --- 2. UNIT HEADER ---
         if(item.unit && item.unit !== lastUnit) {
             lastUnit = item.unit;
             const unitHeader = document.createElement('div');
@@ -3520,20 +3742,9 @@ window.renderSyllabus = function(type, searchQuery = '') {
             fragment.appendChild(unitHeader);
         }
 
-        // --- 3. CHAPTER CARD RENDER ---
+        // --- 3. CHAPTER CARD ---
         const chapterMatch = item.topic.toLowerCase().includes(lowerQuery) || item.subject.toLowerCase().includes(lowerQuery);
-        // ... (Rest of the rendering logic is exactly the same as before, just ensure you include it) ...
-        // ... Copy the rest of the renderSyllabus function from previous step here ...
         
-        // [Insert the Card Creation Logic here from previous turn]
-        // This is where "const chapterId = ..." starts.
-        // Make sure to use item.topic as the Chapter Name.
-        
-        // (Shortened for brevity - Paste the previous card generation code here)
-        
-        // ...
-        
-        // START OF CARD LOGIC (Pasted for clarity)
         const matchingTests = item.dailyTests.filter(dt => {
             if (chapterMatch) return true; 
             return dt.name.toLowerCase().includes(lowerQuery) || 
@@ -3556,15 +3767,15 @@ window.renderSyllabus = function(type, searchQuery = '') {
         const card = document.createElement('div');
         card.className = chapterCardClass;
         
-        // Use 'topic' as Chapter Name
-        const safeTopic = escapeHtml(item.topic);
+        // Escape Topic Name for HTML Display
+        const safeTopicDisplay = item.topic.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         
         let html = `
             <div class="px-4 py-3 border-b ${allDailyTestsCompleted ? 'border-green-200 dark:border-green-800 bg-green-100 dark:bg-green-900/20' : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800'} flex justify-between items-center cursor-pointer select-none" onclick="toggleChapter('${chapterId}')">
                 <div>
                     <span class="text-[10px] font-bold uppercase tracking-wider ${allDailyTestsCompleted ? 'text-green-700 dark:text-green-300' : 'text-slate-400 dark:text-slate-500'}">${item.subject}</span>
                     <div class="flex items-center gap-2">
-                        <h4 class="font-bold text-slate-800 dark:text-white">${safeTopic}</h4> 
+                        <h4 class="font-bold text-slate-800 dark:text-white">${safeTopicDisplay}</h4> 
                         ${allDailyTestsCompleted ? '<i data-lucide="check-circle" class="w-4 h-4 text-green-600 dark:text-green-400"></i>' : ''}
                     </div>
                 </div>
@@ -3572,10 +3783,10 @@ window.renderSyllabus = function(type, searchQuery = '') {
             </div>
         `;
         
-        // ... (Daily Test Loop - Same as before) ...
          if (isChapterExpanded) {
             html += `<div class="p-4 grid grid-cols-1 gap-3">`;
             const testsToRender = lowerQuery ? matchingTests : item.dailyTests;
+            
             testsToRender.forEach((dt) => {
                 const originalIndex = item.dailyTests.indexOf(dt);
                 const testId = `${chapterId}-test-${originalIndex}`;
@@ -3589,6 +3800,8 @@ window.renderSyllabus = function(type, searchQuery = '') {
                 if (isAttempted) cardStyle = "border-0 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md";
 
                 const showCheckbox = isReady || isAttempted;
+                // ESCAPE TEST NAME FOR ONCLICK
+                const safeTestName = dt.name.replace(/'/g, "\\'");
                 
                 html += `
                     <div class="${cardStyle} overflow-hidden">
@@ -3596,7 +3809,7 @@ window.renderSyllabus = function(type, searchQuery = '') {
                              <div class="flex items-center gap-2">
                                 <i data-lucide="chevron-right" class="w-4 h-4 ${isAttempted ? 'text-white/70' : 'text-slate-400'} transition-transform duration-200 ${isTestExpanded ? 'rotate-90' : ''}"></i>
                                 <div class="flex items-center gap-2" onclick="event.stopPropagation()">
-                                    ${showCheckbox ? `<input type="checkbox" ${isAttempted ? 'checked' : ''} onchange="toggleTestAttempt('${dt.name}')" class="w-4 h-4 rounded border-slate-300 text-green-600 focus:ring-green-500 cursor-pointer">` : ''}        
+                                    ${showCheckbox ? `<input type="checkbox" ${isAttempted ? 'checked' : ''} onchange="toggleTestAttempt('${safeTestName}')" class="w-4 h-4 rounded border-slate-300 text-green-600 focus:ring-green-500 cursor-pointer">` : ''}        
                                     <span class="text-xs font-bold ${isAttempted ? 'text-green-800 bg-white/90' : 'text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700'} px-2 py-0.5 rounded backdrop-blur-sm">${dt.name}</span>
                                 </div>
                             </div>
@@ -3609,11 +3822,16 @@ window.renderSyllabus = function(type, searchQuery = '') {
                                         const taskName = `Study: ${item.topic} - ${sub}`;
                                         const isAdded = todaysTasks.has(taskName);
                                         const isDone = allCompleted.has(taskName);
-                                         return `
+                                        
+                                        // ✅✅✅ FIX: ESCAPE SINGLE QUOTES FOR JS FUNCTIONS ✅✅✅
+                                        const safeTopic = item.topic.replace(/'/g, "\\'");
+                                        const safeSub = sub.replace(/'/g, "\\'");
+                                        
+                                        return `
                                             <div class="flex items-center justify-between group pl-6 py-0.5">
                                                 <span class="text-[11px] truncate w-3/4 ${isDone ? 'line-through opacity-50' : ''}" title="${sub}">• ${sub}</span>
                                                 ${!isDone ? 
-                                                    `<button onclick="addSyllabusTask('${item.topic} - ${sub}', '${type}', '${item.subject}', '${item.topic}')" class="${isAttempted ? 'text-white/80' : 'text-brand-400 hover:text-brand-600'} transition-colors p-1">
+                                                    `<button onclick="addSyllabusTask('${safeTopic} - ${safeSub}', '${type}', '${item.subject}', '${safeTopic}')" class="${isAttempted ? 'text-white/80' : 'text-brand-400 hover:text-brand-600'} transition-colors p-1">
                                                         <i data-lucide="${isAdded ? 'copy-check' : 'plus-circle'}" class="w-4 h-4"></i>
                                                     </button>` : 
                                                     `<i data-lucide="check" class="w-3 h-3 ${isAttempted ? 'text-white' : 'text-green-500'}"></i>`
@@ -3634,7 +3852,6 @@ window.renderSyllabus = function(type, searchQuery = '') {
     container.appendChild(fragment);
     if(window.lucide) lucide.createIcons({ root: container });
 };
-
       
     // --- MODAL CONTROLLER ---
 const modal = document.getElementById('customModal');
