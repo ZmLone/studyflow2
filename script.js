@@ -2953,7 +2953,8 @@ window.renderHeader = function() {
     const container = document.getElementById('header-dynamic-greeting');
     if (!container) return;
 
-    // 1. IF OVERVIEW: Show Date Switcher
+    
+// 1. IF OVERVIEW: Show Date Switcher
     if (state.activeView === 'overview') {
         const isToday = formatDateKey(state.selectedDate) === formatDateKey(new Date());
         
@@ -2976,8 +2977,8 @@ window.renderHeader = function() {
                 </button>
             </div>
         `;
-    }        `;
-    } 
+    }
+     
     // 2. OTHER VIEWS: Show Page Title
     else {
         const titles = {
