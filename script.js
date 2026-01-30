@@ -1261,12 +1261,14 @@ window.handleAuthAction = function(e) {
     if (!currentUser || currentUser.isAnonymous) document.getElementById('auth-modal').classList.remove('hidden');
     else handleLogout();
 };
-        function init() {
-            // FIX: This must run FIRST to prevent the crash
-            setupSchedule(); 
+             function init() {
+    // FIX: This must run FIRST to prevent the crash
+    setupSchedule(); 
+    
+    // ✅ NEW: Activate Scroll Header Logic
+    initScrollHeader(); 
 
-            if (!isFirebaseActive && !localStorage.getItem('studyflow_demo_mode')) {
-                document.getElementById('auth-modal').classList.remove('hidden');
+    if (!isFirebaseActive && !localStorage.getItem('studyflow_demo_mode')) {           document.getElementById('auth-modal').classList.remove('hidden');
                 if(window.lucide) lucide.createIcons();
                 return;
             }
@@ -1511,8 +1513,11 @@ window.togglePrayer = function(prayerName) {
     if (!state.prayers[k]) state.prayers[k] = {};
     state.prayers[k][prayerName] = !state.prayers[k][prayerName];
     saveData();
+    
+    // Update both the modal (if open) and the NEW header widget
     renderPrayerModalItems();
-    updateHeaderPrayerBtn();
+    renderHeaderPrayerWidget(); // <--- Changed this line!
+    updateSidebarBadges();      // Optional: Updates badges if you add prayer logic there later
 };
 
 window.renderPrayerModalItems = function() {
@@ -2707,6 +2712,7 @@ window.renderLeaderboardList = function() {
     }).join('');
 
     if(window.lucide) lucide.createIcons({ root: list });
+updateSidebarBadges();
 };
 
      
@@ -3126,6 +3132,46 @@ window.assignChapterTime = function(chapName, inputId) {
         setTimeout(() => toast.remove(), 3000);
     }
 };
+// ✅ NEW: Scroll-to-Hide Header Logic
+// ✅ NEW: Scroll-to-Hide Header Logic (Improved)
+
+// ✅ NEW: Smooth GPU-Accelerated Scroll Hide
+window.initScrollHeader = function() {
+    const scrollEl = document.getElementById('overview-scroll-view');
+    const headerEl = document.getElementById('overview-header');
+    
+    if (!scrollEl || !headerEl) return;
+
+    let lastScroll = 0;
+    let ticking = false; // Performance throttle
+
+    scrollEl.addEventListener('scroll', () => {
+        const currentScroll = scrollEl.scrollTop;
+        
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                // 1. Always show if near top (bounce protection)
+                if (currentScroll < 50) {
+                    headerEl.style.transform = "translateY(0)";
+                } 
+                // 2. Hide on Scroll Down
+                else if (currentScroll > lastScroll && currentScroll > 60) {
+                    headerEl.style.transform = "translateY(-100%)";
+                } 
+                // 3. Show on Scroll Up
+                else if (currentScroll < lastScroll) {
+                    headerEl.style.transform = "translateY(0)";
+                }
+                
+                lastScroll = Math.max(0, currentScroll); // Prevent negative scroll bounce
+                ticking = false;
+            });
+            ticking = true;
+        }
+    });
+};
+document.addEventListener('DOMContentLoaded', init);
+
  document.addEventListener('DOMContentLoaded', init);
 
         // Optimization: FOUC listener - Triggered on DOMContentLoaded instead of Load for faster paint
@@ -3155,7 +3201,7 @@ window.assignChapterTime = function(chapName, inputId) {
         
 window.renderAll = function() {
     renderHeader();
-    updateHeaderPrayerBtn();
+renderHeaderPrayerWidget();
     renderStats();
     updateSidebarBadges();
 
@@ -3184,13 +3230,123 @@ window.renderAll = function() {
 };
 
 window.renderTasks = renderTasks;
-        function renderHeader() {
-            const els = { date: document.getElementById('overview-date'), agendaDate: document.getElementById('agenda-date-display') };
-            const dateStr = state.selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-            if(els.date) els.date.textContent = state.selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-            if(els.agendaDate) els.agendaDate.textContent = dateStr;
+
+
+window.renderHeader = function() {
+    // 1. DATE LOGIC (Time Capsule) - Keep this distinct
+    const dayEl = document.getElementById('header-date-day');
+    const fullEl = document.getElementById('header-date-full');
+    const now = new Date();
+    const isToday = state.selectedDate.toDateString() === now.toDateString();
+
+    if(dayEl) {
+        dayEl.textContent = isToday ? "TODAY" : state.selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
+        if(isToday) dayEl.className = "uppercase tracking-widest text-[9px] text-brand-600 font-extrabold";
+        else dayEl.className = "uppercase tracking-widest text-[9px] text-slate-400";
+    }
+
+    if(fullEl) {
+        fullEl.textContent = state.selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    // 2. 🌈 COLORFUL ANIMATED GREETING (Replaces App Title)
+    const greetingEl = document.getElementById('header-dynamic-greeting');
+    if(greetingEl) {
+        const hour = now.getHours();
+        let greeting = "Welcome";
+        let icon = "✨";
+        
+        // Define color themes based on time
+        let gradientClass = "from-indigo-600 via-purple-600 to-pink-600"; // Default/Night
+
+        if (hour >= 5 && hour < 12) { 
+            greeting = "Good morning"; 
+            icon = "🌅"; 
+            gradientClass = "from-orange-500 via-amber-500 to-yellow-500";
+        }
+        else if (hour >= 12 && hour < 17) { 
+            greeting = "Good afternoon"; 
+            icon = "☀️"; 
+            gradientClass = "from-blue-500 via-cyan-500 to-teal-500";
+        }
+        else if (hour >= 17 && hour < 22) { 
+            greeting = "Good evening"; 
+            icon = "🌙"; 
+            gradientClass = "from-indigo-500 via-purple-500 to-pink-500";
+        }
+        else { 
+            greeting = "Up late"; 
+            icon = "🦉"; 
+            gradientClass = "from-violet-600 via-fuchsia-600 to-indigo-600";
         }
 
+        const name = state.displayName || "Future Doctor";
+        
+        // ✨ THE INJECTION: Big Text + Animation + Gradient Name
+        greetingEl.innerHTML = `
+            <div class="flex items-center gap-3 animate-in fade-in slide-in-from-left-4 duration-700 ease-out">
+                <div class="text-3xl md:text-4xl animate-bounce delay-75 drop-shadow-sm">
+                    ${icon}
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-black tracking-tight text-slate-900 dark:text-white leading-none">
+                        ${greeting},
+                    </h1>
+                    <button onclick="openProfileModal()" class="group relative flex items-center mt-0.5" title="Tap to Edit Profile">
+                        <span class="text-xl md:text-3xl font-black bg-gradient-to-r ${gradientClass} text-transparent bg-clip-text transition-all duration-300 group-hover:scale-[1.02]">
+                            ${name}
+                        </span>
+                        <span class="absolute -bottom-1 left-0 w-0 h-[3px] bg-gradient-to-r ${gradientClass} transition-all duration-300 group-hover:w-full rounded-full"></span>
+                        <i data-lucide="edit-3" class="w-3 h-3 ml-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Initialize the edit icon
+        if(window.lucide) lucide.createIcons({ root: greetingEl });
+    }
+
+    // 3. Agenda Date Sync
+    const agendaEl = document.getElementById('agenda-date-display');
+    if(agendaEl) agendaEl.textContent = state.selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+};
+
+// ✅ NEW: Renders the 5-pill prayer strip in the header
+window.renderHeaderPrayerWidget = function() {
+    const container = document.getElementById('header-prayer-widget');
+    if (!container) return;
+
+    const k = formatDateKey(state.selectedDate);
+    const todayData = state.prayers[k] || {};
+    
+    const prayers = [
+        { key: 'Fajr', label: 'F' },
+        { key: 'Dhuhr', label: 'D' },
+        { key: 'Asr', label: 'A' },
+        { key: 'Maghrib', label: 'M' },
+        { key: 'Isha', label: 'I' }
+    ];
+
+    container.innerHTML = prayers.map(p => {
+        const isDone = todayData[p.key] === true;
+        
+        // This is the line you were looking for (Updated with White/Border style)
+        let baseClass = "flex-1 md:flex-none h-9 w-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-xs font-bold transition-all duration-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm";
+        
+        let stateClass = isDone 
+            ? "bg-emerald-500 text-white !border-emerald-500 shadow-md shadow-emerald-500/30 scale-105" 
+            : "text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 hover:border-brand-300 dark:hover:border-brand-700";
+
+        return `
+            <button onclick="togglePrayer('${p.key}')" class="${baseClass} ${stateClass}" title="Mark ${p.key} as done">
+                ${isDone ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : p.label}
+            </button>
+        `;
+    }).join('');
+
+    if(window.lucide) lucide.createIcons({ root: container });
+};
 
 // ==========================================
 // 🚀 TACTICAL DASHBOARD V4 (Strict Phases + Total %)
