@@ -1291,65 +1291,68 @@ window.checkSyllabusOverlap = function() {
         }, 1500); // Small delay so it appears after load
     }
 };
-             function init() {
-    // FIX: This must run FIRST to prevent the crash
+function init() {
     setupSchedule(); 
-    
-    // ✅ NEW: Activate Scroll Header Logic
     initScrollHeader(); 
-
-// ✅ ADD THIS LINE:
     checkSyllabusOverlap();
 
-    if (!isFirebaseActive && !localStorage.getItem('studyflow_demo_mode')) {           document.getElementById('auth-modal').classList.remove('hidden');
-                if(window.lucide) lucide.createIcons();
-                return;
-            }
+    if (!isFirebaseActive && !localStorage.getItem('studyflow_demo_mode')) {
+        document.getElementById('auth-modal').classList.remove('hidden');
+        if(window.lucide) lucide.createIcons();
+        return;
+    }
 
-            if(isFirebaseActive) {
-                onAuthStateChanged(auth, (user) => {
-                    currentUser = user;
-                    
-                    if (user) {
-                        document.getElementById('auth-modal').classList.add('hidden');
-                        const docRef = getSafeDocRef(user.uid);
+    if(isFirebaseActive) {
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            
+            if (user) {
+                document.getElementById('auth-modal').classList.add('hidden');
+                const docRef = getSafeDocRef(user.uid);
+                
+                unsubscribeDoc = onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        state.tasks = data.tasks || {};
+                        state.dailyTestsAttempted = data.dailyTestsAttempted || {};
+                        state.mistakes = data.mistakes || []; 
+                        state.prayers = data.prayers || {};
+                        state.displayName = data.displayName || null;
                         
-                        unsubscribeDoc = onSnapshot(docRef, (docSnap) => {
-                            if (docSnap.exists()) {
-                                const data = docSnap.data();
-                                state.tasks = data.tasks || {};
-                                state.dailyTestsAttempted = data.dailyTestsAttempted || {};
-                                state.mistakes = data.mistakes || []; 
-                                state.prayers = data.prayers || {};
-                                state.displayName = data.displayName || null;
-                                
-                                updateProfileUI(user); // Updates UI to "User Mode"
-                                renderAll();
-                            } else {
-                                saveData();
-                                updateProfileUI(user);
-                            }
-                        }, (error) => {
-                            console.error("Firestore error fallback:", error);
-                            initLocalMode();
-                        });   
-                    } else {
-                        updateProfileUI(null); // Updates UI to "Guest Mode"
-                        document.getElementById('auth-modal').classList.remove('hidden');
-                    }
-                });
-            } else {
-                initLocalMode();
-            }
+                        updateProfileUI(user);
+                        renderAll();
 
-            // Setup Mistake Form Listener
-            const mistakeForm = document.getElementById('mistake-form');
-            if(mistakeForm) {
-                const newMForm = mistakeForm.cloneNode(true);
-                mistakeForm.parentNode.replaceChild(newMForm, mistakeForm);
-                newMForm.addEventListener('submit', window.saveMistake);
+                        // ✅ FORCE UPDATE LEADERBOARD ON LOAD
+                        // This fixes the "Old High Score" issue by recalculating 
+                        // and syncing your stats immediately with the new formula.
+                        saveData(); 
+
+                    } else {
+                        saveData();
+                        updateProfileUI(user);
+                    }
+                }, (error) => {
+                    console.error("Firestore error fallback:", error);
+                    initLocalMode();
+                });   
+            } else {
+                updateProfileUI(null);
+                document.getElementById('auth-modal').classList.remove('hidden');
             }
-        }
+        });
+    } else {
+        initLocalMode();
+    }
+
+    // Setup Mistake Form Listener
+    const mistakeForm = document.getElementById('mistake-form');
+    if(mistakeForm) {
+        const newMForm = mistakeForm.cloneNode(true);
+        mistakeForm.parentNode.replaceChild(newMForm, mistakeForm);
+        newMForm.addEventListener('submit', window.saveMistake);
+    }
+}             
+
 function initLocalMode() {
         const storedPrayers = localStorage.getItem('studyflow_prayers');
         if (storedPrayers) state.prayers = JSON.parse(storedPrayers);
@@ -1421,65 +1424,91 @@ function setupSchedule() {
         }
 
 
-// --- HELPER: CALCULATE STATS (FIXED: SCOPED TO CURRENT EXAM) ---
+// --- HELPER: CALCULATE STATS (Fair Ground: All Factors are 0-100%) ---
 function calculateUserStats() {
-    // 1. Build Valid Tests List (ONLY for Current Exam + Backlog)
-    const validTests = new Set();
-    
-    // A. Add Current Exam Tests
-    if (state.nextExam && state.nextExam.syllabus) {
-        state.nextExam.syllabus.forEach(s => s.dailyTests.forEach(dt => validTests.add(dt.name)));
-    }
-    
-    // B. Add Backlog Tests
-    if (typeof backlogPlan !== 'undefined' && backlogPlan.syllabus) {
-        backlogPlan.syllabus.forEach(s => s.dailyTests.forEach(dt => validTests.add(dt.name)));
-    }
-
-    // 2. Scan Completed Tasks
+    // 1. Snapshot of all completed tasks
     const allCompleted = new Set(
         Object.values(state.tasks).flat()
         .filter(t => t.completed)
         .map(t => t.text)
     );
 
-    // 3. Main Exam %
+    // --- PHASE LOGIC START ---
+    let currentPhase = 1;
+    if(typeof backlogPlan !== 'undefined') {
+        const planStart = backlogPlan.startDate;
+        const diff = Math.ceil((new Date() - planStart) / (1000 * 60 * 60 * 24));
+        if(diff > 45) currentPhase = 4;
+        else if(diff > 30) currentPhase = 3;
+        else if(diff > 15) currentPhase = 2;
+    }
+    // --- PHASE LOGIC END ---
+
+    // 2. Main Exam % (Weighted) & Count Total Tests
     let mainTotal = 0, mainDone = 0;
+    let mainTestsCount = 0;
+    const validTestNames = new Set();
+
     if(state.nextExam && state.nextExam.syllabus) {
-        state.nextExam.syllabus.forEach(s => s.dailyTests.forEach(dt => dt.subs.forEach(sub => {
-            mainTotal++;
-            if(allCompleted.has(`Study: ${s.topic} - ${sub}`)) mainDone++;
-        })));
+        state.nextExam.syllabus.forEach(s => s.dailyTests.forEach(dt => {
+            validTestNames.add(dt.name);
+            mainTestsCount++; // Count available tests
+            
+            const pts = getSubtopicPoints(dt, s.subject, s.topic);
+            dt.subs.forEach(sub => {
+                mainTotal += pts;
+                if(allCompleted.has(`Study: ${s.topic} - ${sub}`)) mainDone += pts;
+            });
+        }));
     }
     const mainPct = mainTotal ? Math.round((mainDone/mainTotal)*100) : 0;
 
-    // 4. Backlog %
+    // 3. Backlog % (Weighted - ACTIVE PHASE ONLY) & Count Total Tests
     let blTotal = 0, blDone = 0;
+    let blTestsCount = 0;
+
     if(typeof backlogPlan !== 'undefined' && backlogPlan.syllabus) {
-        backlogPlan.syllabus.forEach(s => s.dailyTests.forEach(dt => dt.subs.forEach(sub => {
-            blTotal++;
-            if(allCompleted.has(`Study: ${s.topic} - ${sub}`)) blDone++;
-        })));
+        backlogPlan.syllabus.forEach(s => {
+            if (s.phase === currentPhase) { 
+                s.dailyTests.forEach(dt => {
+                    validTestNames.add(dt.name);
+                    blTestsCount++; // Count available tests
+                    
+                    const pts = getSubtopicPoints(dt, s.subject, s.topic);
+                    dt.subs.forEach(sub => {
+                        blTotal += pts;
+                        if(allCompleted.has(`Study: ${s.topic} - ${sub}`)) blDone += pts;
+                    });
+                });
+            }
+        });
     }
     const blPct = blTotal ? Math.round((blDone/blTotal)*100) : 0;
 
-    // 5. Test Count (ONLY counts tests in validTests set)
-    const testCount = Object.keys(state.dailyTestsAttempted).filter(k => 
-        state.dailyTestsAttempted[k] && validTests.has(k)
+    // 4. Test Progress % (The New "Fair" Metric)
+    // We calculate what % of the CURRENT RELEVANT tests you have attempted.
+    const totalPossibleTests = mainTestsCount + blTestsCount;
+    
+    const attemptsCount = Object.keys(state.dailyTestsAttempted).filter(k => 
+        state.dailyTestsAttempted[k] && validTestNames.has(k)
     ).length;
 
-    // 6. Overall Percentage (Weighted Average for Leaderboard)
-    // We give Main Exam 70% weight, Backlog 30% weight
-    const overallPct = Math.round((mainPct * 0.7) + (blPct * 0.3));
+    const testPct = totalPossibleTests ? Math.round((attemptsCount / totalPossibleTests) * 100) : 0;
 
-    // 7. Overall Score (For sorting tie-breakers)
-    const overallScore = (mainPct * 10) + (blPct * 5) + (testCount * 20);
+    // 5. FAIR SCORE FORMULA
+    // All three components are now equal (0-100 scale).
+    // Max Score = 300 (100 + 100 + 100)
+    const overallScore = mainPct + blPct + testPct;
 
-    return { mainPct, blPct, testCount, overallPct, overallScore };
+    return { 
+        mainPct, 
+        blPct, 
+        testCount: attemptsCount, // Keep returning raw count for the UI "Pill"
+        overallScore 
+    };
 }
-
 function saveData() {
-    const stats = calculateUserStats(); // Uses the fixed calculator above
+    const stats = calculateUserStats(); 
 
     if(isFirebaseActive && currentUser) {
         const docRef = getSafeDocRef(currentUser.uid);
@@ -1487,7 +1516,7 @@ function saveData() {
         const statusEl = document.getElementById('desktop-sync-status');
         if(statusEl) statusEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></span> Saving...`;
 
-        // 1. Save Personal Data (Private)
+        // 1. Save Personal Data
         setDoc(docRef, {
             tasks: state.tasks,
             dailyTestsAttempted: state.dailyTestsAttempted,
@@ -1501,22 +1530,22 @@ function saveData() {
             if(statusEl) statusEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Save Failed`;
         });
 
-        // 2. Save Leaderboard Entry (FIXED ERROR HANDLING)
+        // 2. Save Leaderboard Entry (DETAILED SYNC)
         const lbRef = doc(db, 'leaderboard', currentUser.uid);
 
-        // Use the new stats calculated above
         setDoc(lbRef, {
             email: currentUser.email || 'Anonymous',
             displayName: state.displayName || 'Anonymous',
             
-            // SAVE THE NEW FIELDS
+            // X, Y, Z Factors
             mainPct: stats.mainPct,
             blPct: stats.blPct,
             testCount: stats.testCount,
-            overallPct: stats.overallPct, // New Field
-            overallScore: stats.overallScore, // New Field
             
-            currentExam: state.nextExam.name, // CRITICAL for filtering
+            // Score & Reset Key
+            overallScore: stats.overallScore, 
+            currentExam: state.nextExam.name, // Used to filter/reset seasons
+            
             lastUpdated: new Date()
         }, { merge: true }).catch(err => {
             console.error("Leaderboard Save failed:", err);
@@ -1531,8 +1560,6 @@ function saveData() {
     }
     renderAll();
 }
- 
-
 
  // --- PRAYER FUNCTIONS ---
 window.openPrayerModal = function() {
@@ -2646,115 +2673,133 @@ window.renderLeaderboardList = function() {
     const list = document.getElementById('leaderboard-list');
     if(!list) return;
 
-    // 1. Live Recalculate
+    // 1. Get Live Stats for "You" so the list updates instantly when you interact
     const myStats = calculateUserStats();
     
     // 2. Update Profile Card (Top Section)
     const myNameEl = document.getElementById('lb-user-name');
     if(myNameEl) myNameEl.textContent = state.displayName || (currentUser ? currentUser.email.split('@')[0] : "Guest");
     
+    // Update Your Pill Stats
     if(document.getElementById('lb-my-exam')) document.getElementById('lb-my-exam').textContent = `${myStats.mainPct}%`;
     if(document.getElementById('lb-my-backlog')) document.getElementById('lb-my-backlog').textContent = `${myStats.blPct}%`;
-    if(document.getElementById('lb-my-tests')) document.getElementById('lb-my-tests').textContent = myStats.testCount;
-
-    const myId = currentUser ? currentUser.uid : null;
-    let sortedData = [...leaderboardCache];
-
-    // --- LEAGUE FILTER ---
+    // Note: We now use testPct (%) for consistency with the new Fair Rule
+    if(document.getElementById('lb-my-tests')) document.getElementById('lb-my-tests').textContent = `${myStats.testPct || 0}%`;
+    
+    // 3. FILTER & SORT (By Season)
     const currentExamName = state.nextExam.name;
     const headerTitle = document.querySelector('#view-leaderboard h1');
-    if(headerTitle) headerTitle.innerHTML = `<i data-lucide="trophy" class="w-6 h-6 text-yellow-500"></i> Leaderboard <span class="hidden md:inline-block text-xs bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded ml-2 align-middle">${currentExamName} Season</span>`;
+    
+    // Add Season Badge to Title
+    if(headerTitle) headerTitle.innerHTML = `<i data-lucide="trophy" class="w-5 h-5 text-yellow-500"></i> Leaderboard <span class="hidden md:inline-block text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full ml-2 align-middle border border-slate-200 dark:border-slate-700">${currentExamName}</span>`;
 
-    // Filter strictly by current exam
-    sortedData = sortedData.filter(u => u.currentExam === currentExamName);
-
-    // Sort by Overall Score (High to Low)
-    sortedData.sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0));
+    let sortedData = [...leaderboardCache]
+        .filter(u => u.currentExam === currentExamName) 
+        .sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0));
 
     // Update My Rank Display
-    const myRankEl = document.getElementById('lb-my-rank');
+    const myId = currentUser ? currentUser.uid : null;
     const myRankIndex = sortedData.findIndex(u => u.id === myId);
+    const myRankEl = document.getElementById('lb-my-rank');
     if(myRankEl) myRankEl.textContent = myRankIndex > -1 ? `#${myRankIndex + 1}` : '-';
 
+    // 4. EMPTY STATE
     if(sortedData.length === 0) {
-        list.innerHTML = `<div class="flex flex-col items-center justify-center py-12 text-slate-400 opacity-60">
-            <i data-lucide="flag" class="w-12 h-12 mb-3"></i>
-            <p>New Season Started! Be the first to score.</p>
-        </div>`;
+        list.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-12 text-slate-400 opacity-60">
+                <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-full mb-3">
+                    <i data-lucide="flag" class="w-8 h-8 text-slate-300 dark:text-slate-600"></i>
+                </div>
+                <p class="text-sm font-medium">New Season Started!</p>
+                <p class="text-xs">Complete a task to be the first.</p>
+            </div>`;
         if(window.lucide) lucide.createIcons({ root: list });
         return;
     }
 
-    // --- NEW MODERN CARD DESIGN ---
+    // 5. RENDER CARDS (New Design)
     list.innerHTML = sortedData.map((user, index) => {
         const isMe = user.id === myId;
+        const stats = isMe ? myStats : user; // Use live stats for yourself
         
-        // Use live stats for "Me", cached for others
-        const stats = isMe ? myStats : user;
-        const mainPct = stats.mainPct || 0;
-        const blPct = stats.blPct || 0;
-        const testCnt = stats.testCount || 0;
-        const overall = stats.overallPct || Math.round((mainPct * 0.7) + (blPct * 0.3));
+        // --- RANK STYLING (Gold/Silver/Bronze) ---
+        let rankDisplay = `<span class="text-sm font-bold text-slate-500 w-6 text-center">#${index + 1}</span>`;
+        let borderClass = "border-slate-200 dark:border-slate-800";
+        let bgClass = "bg-white dark:bg-slate-900";
 
-        // Rank Styling
-        let rankBadge = `<span class="font-bold text-slate-500 text-sm">#${index + 1}</span>`;
-        let cardBorder = isMe ? "border-brand-500 ring-1 ring-brand-500" : "border-slate-200 dark:border-slate-800";
-        let cardBg = isMe ? "bg-brand-50/50 dark:bg-brand-900/10" : "bg-white dark:bg-slate-900";
-        
         if (index === 0) {
-            rankBadge = `<div class="w-8 h-8 rounded-full bg-yellow-400 text-yellow-900 flex items-center justify-center font-bold text-sm shadow-sm"><i data-lucide="crown" class="w-4 h-4"></i></div>`;
-            cardBorder = "border-yellow-400/50";
+            rankDisplay = `<div class="w-7 h-7 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center shadow-sm ring-1 ring-yellow-200"><i data-lucide="crown" class="w-3.5 h-3.5 fill-current"></i></div>`;
+            borderClass = "border-yellow-400/60 ring-1 ring-yellow-400/20";
+            bgClass = "bg-gradient-to-r from-yellow-50/50 to-white dark:from-yellow-900/10 dark:to-slate-900";
         } else if (index === 1) {
-            rankBadge = `<div class="w-8 h-8 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center font-bold text-sm shadow-sm">2</div>`;
+            rankDisplay = `<div class="w-7 h-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center shadow-sm ring-1 ring-slate-200 font-bold text-xs">2</div>`;
+            borderClass = "border-slate-300 dark:border-slate-600";
         } else if (index === 2) {
-            rankBadge = `<div class="w-8 h-8 rounded-full bg-orange-300 text-orange-800 flex items-center justify-center font-bold text-sm shadow-sm">3</div>`;
+            rankDisplay = `<div class="w-7 h-7 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center shadow-sm ring-1 ring-orange-200 font-bold text-xs">3</div>`;
+            borderClass = "border-orange-300 dark:border-orange-700";
         }
 
-        const userName = user.displayName || (user.email ? user.email.split('@')[0] : 'Anonymous');
-        const firstLetter = userName.charAt(0).toUpperCase();
+        // Highlight "Me"
+        if (isMe) {
+            borderClass = "border-brand-500 ring-1 ring-brand-500 shadow-md shadow-brand-500/10";
+            bgClass = "bg-brand-50 dark:bg-brand-900/10";
+        }
+
+        // Safe Fallbacks for display
+        const dispMain = stats.mainPct || 0;
+        const dispBacklog = stats.blPct || 0;
+        // Show % if available (new data), otherwise count (old data) to avoid showing "0%" for valid old tests
+        const dispTest = (stats.testPct !== undefined) ? `${stats.testPct}%` : (stats.testCount || 0); 
 
         return `
-            <div class="relative flex flex-col md:flex-row md:items-center gap-4 p-4 rounded-xl border ${cardBorder} ${cardBg} mb-3 transition-all hover:scale-[1.01] hover:shadow-md group">
+            <div class="relative flex flex-col gap-3 p-4 rounded-2xl border ${borderClass} ${bgClass} mb-3 transition-transform active:scale-[0.99]">
                 
-                <div class="flex items-center gap-4 flex-1">
-                    <div class="shrink-0 w-8 flex justify-center">${rankBadge}</div>
-                    
+                <div class="flex justify-between items-center">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-sm font-bold text-slate-600 dark:text-slate-300 shadow-inner">
-                            ${firstLetter}
+                        ${rankDisplay}
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-2">
+                                ${user.displayName || 'User'}
+                                ${isMe ? '<span class="bg-brand-600 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold tracking-wide">YOU</span>' : ''}
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-medium">Rank ${index + 1}</span>
                         </div>
-                        <div>
-                            <p class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                ${userName}
-                                ${isMe ? '<span class="bg-brand-100 dark:bg-brand-900 text-brand-700 dark:text-brand-300 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">You</span>' : ''}
-                            </p>
-                            <p class="text-[10px] text-slate-500 font-medium">League: ${user.currentExam || 'Unknown'}</p>
-                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="block text-lg font-black text-brand-600 dark:text-brand-400 leading-none">${stats.overallScore || 0}</span>
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Points</span>
                     </div>
                 </div>
 
-                <div class="w-full md:w-48 flex flex-col justify-center">
-                    <div class="flex justify-between text-[10px] font-bold text-slate-400 uppercase mb-1">
-                        <span>Overall Progress</span>
-                        <span class="${index < 3 ? 'text-brand-600 dark:text-brand-400' : ''}">${overall}%</span>
+                <div class="grid grid-cols-3 gap-2 mt-1">
+                    <div class="flex items-center gap-2 bg-slate-50 dark:bg-black/20 p-2 rounded-lg border border-slate-100 dark:border-white/5">
+                        <div class="w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                            <i data-lucide="target" class="w-3.5 h-3.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-[9px] text-slate-400 font-bold uppercase truncate">Exam</div>
+                            <div class="text-xs font-bold text-slate-700 dark:text-slate-200">${dispMain}%</div>
+                        </div>
                     </div>
-                    <div class="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                        <div class="h-full bg-gradient-to-r from-brand-500 to-indigo-500 rounded-full" style="width: ${overall}%"></div>
-                    </div>
-                </div>
 
-                <div class="flex items-center gap-2 justify-between md:justify-end w-full md:w-auto mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800/50">
-                    <div class="flex flex-col items-center px-3 border-r border-slate-100 dark:border-slate-800 last:border-0">
-                        <span class="text-[10px] uppercase font-bold text-slate-400">Exam</span>
-                        <span class="text-sm font-bold text-brand-600 dark:text-brand-400">${mainPct}%</span>
+                    <div class="flex items-center gap-2 bg-slate-50 dark:bg-black/20 p-2 rounded-lg border border-slate-100 dark:border-white/5">
+                        <div class="w-6 h-6 rounded-md bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 shrink-0">
+                            <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-[9px] text-slate-400 font-bold uppercase truncate">Backlog</div>
+                            <div class="text-xs font-bold text-slate-700 dark:text-slate-200">${dispBacklog}%</div>
+                        </div>
                     </div>
-                    <div class="flex flex-col items-center px-3 border-r border-slate-100 dark:border-slate-800 last:border-0">
-                        <span class="text-[10px] uppercase font-bold text-slate-400">Backlog</span>
-                        <span class="text-sm font-bold text-orange-500">${blPct}%</span>
-                    </div>
-                    <div class="flex flex-col items-center px-3">
-                        <span class="text-[10px] uppercase font-bold text-slate-400">Tests</span>
-                        <span class="text-sm font-bold text-slate-700 dark:text-slate-300">${testCnt}</span>
+
+                    <div class="flex items-center gap-2 bg-slate-50 dark:bg-black/20 p-2 rounded-lg border border-slate-100 dark:border-white/5">
+                        <div class="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                            <i data-lucide="file-check" class="w-3.5 h-3.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-[9px] text-slate-400 font-bold uppercase truncate">Tests</div>
+                            <div class="text-xs font-bold text-slate-700 dark:text-slate-200">${dispTest}</div>
+                        </div>
                     </div>
                 </div>
 
@@ -2763,10 +2808,8 @@ window.renderLeaderboardList = function() {
     }).join('');
 
     if(window.lucide) lucide.createIcons({ root: list });
-updateSidebarBadges();
-};
-
-     
+    updateSidebarBadges();
+};     
 // --- PROFILE FUNCTIONS ---
     window.openProfileModal = function() {
         const input = document.getElementById('profile-name-input');
