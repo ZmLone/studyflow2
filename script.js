@@ -1532,6 +1532,8 @@ window.renderPrayerModalItems = function() {
             <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center ${isDone ? 'border-white bg-white text-emerald-600' : 'border-slate-300 dark:border-slate-600'}">${isDone ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}</div></button>`;
     }).join('');
     if(window.lucide) lucide.createIcons({ root: list });
+
+   updateSidebarBadges();
 };
 
 window.updateHeaderPrayerBtn = function() {
@@ -2093,69 +2095,78 @@ window.showPointsToast = function(points, current, target, subject, type) {
         setTimeout(() => wrapper.remove(), 300);
     }, 3500);
 };
-   // --- 5. MANUAL ADD HOOK (With NEW Visuals) ---
-        window.addTask = function(text, type = 'main', subject = 'General', chapter = null) {
-            // 1. Standard Add
-            const key = formatDateKey(state.selectedDate);
-            if (!state.tasks[key]) state.tasks[key] = [];
-            state.tasks[key].push({
-                id: Date.now() + Math.random().toString(36).substr(2, 9), 
-                text, type, subject, chapter, completed: false 
+   
+// --- 5. MANUAL ADD HOOK (With NEW Visuals & Duplicate Check) ---
+window.addTask = function(text, type = 'main', subject = 'General', chapter = null) {
+    // 1. Get Today's List
+    const key = formatDateKey(state.selectedDate);
+    if (!state.tasks[key]) state.tasks[key] = [];
+
+    // ✅ PREVENT DUPLICATES
+    const alreadyExists = state.tasks[key].some(t => t.text === text);
+    if (alreadyExists) {
+        showToast("⚠️ Task already added to planner");
+        return; // Stop here!
+    }
+
+    // 2. Add New Task
+    state.tasks[key].push({
+        id: Date.now() + Math.random().toString(36).substr(2, 9), 
+        text, type, subject, chapter, completed: false 
+    });
+    saveData();
+    renderAll();
+
+    // 3. CHECK POINTS & SHOW UPDATED VISUALS
+    let pointsFound = 0;
+    let detectedType = 'main';
+    let detectedSubject = subject; // Use the manual subject selection initially
+    let syllabusRef = [];
+
+    // Scan Main
+    if (state.nextExam) {
+        state.nextExam.syllabus.forEach(chap => {
+            chap.dailyTests.forEach(dt => {
+                dt.subs.forEach(sub => {
+                    if (text.includes(sub)) {
+                        pointsFound = getSubtopicPoints(dt, chap.subject, chap.topic);
+                        detectedType = 'main';
+                        detectedSubject = chap.subject; 
+                        syllabusRef = state.nextExam.syllabus;
+                    }
+                });
             });
-            saveData();
-            renderAll();
-
-            // 2. CHECK POINTS & SHOW UPDATED VISUALS
-            let pointsFound = 0;
-            let detectedType = 'main';
-            let detectedSubject = subject; // Use the manual subject selection initially
-            let syllabusRef = [];
-
-            // Scan Main
-            if (state.nextExam) {
-                state.nextExam.syllabus.forEach(chap => {
-                    chap.dailyTests.forEach(dt => {
-                        dt.subs.forEach(sub => {
-                            if (text.includes(sub)) {
-                                pointsFound = getSubtopicPoints(dt, chap.subject, chap.topic);
-                                detectedType = 'main';
-                                detectedSubject = chap.subject; 
-                                syllabusRef = state.nextExam.syllabus;
-                            }
-                        });
-                    });
+        });
+    }
+    
+    // Scan Backlog if not found
+    if (pointsFound === 0 && typeof backlogPlan !== 'undefined') {
+        backlogPlan.syllabus.forEach(chap => {
+            chap.dailyTests.forEach(dt => {
+                dt.subs.forEach(sub => {
+                    if (text.includes(sub)) {
+                        pointsFound = getSubtopicPoints(dt, chap.subject, chap.topic);
+                        detectedType = 'backlog';
+                        detectedSubject = chap.subject;
+                        syllabusRef = backlogPlan.syllabus;
+                    }
                 });
-            }
-            
-            // Scan Backlog if not found
-            if (pointsFound === 0 && typeof backlogPlan !== 'undefined') {
-                backlogPlan.syllabus.forEach(chap => {
-                    chap.dailyTests.forEach(dt => {
-                        dt.subs.forEach(sub => {
-                            if (text.includes(sub)) {
-                                pointsFound = getSubtopicPoints(dt, chap.subject, chap.topic);
-                                detectedType = 'backlog';
-                                detectedSubject = chap.subject;
-                                syllabusRef = backlogPlan.syllabus;
-                            }
-                        });
-                    });
-                });
-            }
+            });
+        });
+    }
 
-            // 3. TRIGGER THE NEW VISUAL TOAST
-            if (pointsFound > 0) {
-                const math = calculateSmartMath(detectedType);
-                const planned = getPlannerPointsForToday(detectedType, syllabusRef);
-                
-                // ✨ CALL THE NEW VISUAL FUNCTION ✨
-                showPointsToast(pointsFound, planned, math.dailyTargetPoints, detectedSubject, detectedType);
-            } else {
-                // Generic toast for non-syllabus tasks
-                showToast("Task added to planner");
-            }
-        };
-
+    // 4. TRIGGER THE NEW VISUAL TOAST
+    if (pointsFound > 0) {
+        const math = calculateSmartMath(detectedType);
+        const planned = getPlannerPointsForToday(detectedType, syllabusRef);
+        
+        // ✨ CALL THE NEW VISUAL FUNCTION ✨
+        showPointsToast(pointsFound, planned, math.dailyTargetPoints, detectedSubject, detectedType);
+    } else {
+        // Generic toast for non-syllabus tasks
+        showToast("Task added to planner");
+    }
+};
         // ✅ RESTORED FUNCTIONS
 
         window.deleteTask = function(id) {
@@ -2221,56 +2232,83 @@ window.showPointsToast = function(points, current, target, subject, type) {
             saveData();
         };
 
- window.switchView = function(view) {
+window.switchView = function(view) {
     state.activeView = view;
-    toggleMobileMenu(true); 
+    toggleMobileMenu(true); // Close mobile menu if open
     
-    // Handle specific view logic
-    if(view === 'leaderboard') {
-        fetchLeaderboard();
-        switchRankTab('overall'); 
-    }
-    if(view === 'namaz') {
-        renderNamazView();
-    }
-    // NEW: Handle Planner View
-    if(view === 'planner') {
-        renderPlanner();
-    }
-    // Reset Notebook if leaving mistakes view
-    if(view === 'mistakes') {
-        closeNotebook(); 
-    }
-
-    // Updated list to include 'planner'
+    // 1. Update Buttons Highlighting
     ['overview','target','backlog', 'mistakes', 'leaderboard', 'namaz', 'planner'].forEach(v => {
         const btn = document.getElementById(`nav-${v}`);
         if(btn) {
-            if(v === view) btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 shadow-sm";
-            else btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all";
+            // Reset all to default style
+            btn.className = "group relative w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-brand-600 dark:hover:text-brand-400 transition-all duration-200 hover:translate-x-1";
+            
+            // Remove any existing active indicators
+            const existingDot = btn.querySelector('.active-indicator');
+            if(existingDot) existingDot.classList.add('hidden');
+
+            // Apply Active Style
+            if(v === view) {
+                btn.className = "group relative w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 shadow-sm ring-1 ring-brand-200 dark:ring-brand-800 transition-all";
+                if(existingDot) existingDot.classList.remove('hidden');
+            }
         }
+        
+        // Hide all Views
         const viewEl = document.getElementById(`view-${v}`);
         if(viewEl) viewEl.classList.add('hidden');
     });
 
+    // 2. Show Active View
     const activeEl = document.getElementById(`view-${view}`);
     if(activeEl) activeEl.classList.remove('hidden');
     
-    // Only render standard views if NOT leaderboard or planner (Planner handles its own render)
-    if(view !== 'leaderboard' && view !== 'planner') renderAll();
+    // 3. FORCE RENDER (This fixes the blank page issue)
+    if(view === 'target') renderSyllabus('main');
+    if(view === 'backlog') renderSyllabus('backlog');
+    if(view === 'leaderboard') fetchLeaderboard();
+    if(view === 'namaz') renderNamazView();
+    if(view === 'planner') renderPlanner();
+    if(view === 'mistakes') {
+        if(state.activeNotebook) renderNotebookEntries();
+        else updateShelfCounts();
+    }
+    if(view === 'overview') renderTasks();
+    
+    // Initialize icons for the new view
+    if(window.lucide) lucide.createIcons();
 };
 
+window.toggleMobileMenu = function(forceClose = false) {
+    // TARGET THE NEW ID "sidebar" INSTEAD OF "mobile-sidebar"
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobile-menu-overlay');
+    
+    if (!sidebar) return;
 
-
-        window.toggleMobileMenu = function(forceClose = false) {
-            const body = document.getElementById('app-body');
-            if (forceClose) { body.classList.remove('menu-open'); body.classList.add('menu-closed'); } 
-            else {
-                if (body.classList.contains('menu-open')) { body.classList.remove('menu-open'); body.classList.add('menu-closed'); } 
-                else { body.classList.remove('menu-closed'); body.classList.add('menu-open'); }
-            }
-        };
+    if (forceClose) {
+        // Force Close: Hide sidebar off-screen & hide overlay
+        sidebar.classList.add('-translate-x-full');
+        sidebar.classList.remove('translate-x-0'); // Ensure it slides out
+        if(overlay) overlay.classList.add('hidden');
+    } else {
+        // Toggle: Slide in or out
+        const isClosed = sidebar.classList.contains('-translate-x-full');
         
+        if (isClosed) {
+            // OPEN IT
+            sidebar.classList.remove('-translate-x-full');
+            sidebar.classList.add('translate-x-0');
+            if(overlay) overlay.classList.remove('hidden');
+        } else {
+            // CLOSE IT
+            sidebar.classList.add('-translate-x-full');
+            sidebar.classList.remove('translate-x-0');
+            if(overlay) overlay.classList.add('hidden');
+        }
+    }
+};
+                
         // --- BOOKSHELF FUNCTIONS ---
 
         window.openNotebook = function(subject) {
@@ -2699,7 +2737,40 @@ window.renderLeaderboardList = function() {
     };
 
 
+window.updateSidebarBadges = function() {
+    // 1. Mistake Badge (Count unresolved)
+    const mistakeCount = (state.mistakes || []).filter(m => !m.resolved).length;
+    const mBadge = document.getElementById('badge-mistakes');
+    if(mBadge) {
+        mBadge.textContent = mistakeCount;
+        if(mistakeCount > 0) mBadge.classList.remove('hidden');
+        else mBadge.classList.add('hidden');
+    }
 
+    // 2. Backlog Phase Badge
+    const bBadge = document.getElementById('badge-backlog');
+    if(bBadge && typeof backlogPlan !== 'undefined') {
+        const planStart = backlogPlan.startDate || new Date();
+        const diffDays = Math.ceil((new Date() - planStart) / (1000 * 60 * 60 * 24)); 
+        let phase = 1;
+        if(diffDays > 45) phase = 4;
+        else if(diffDays > 30) phase = 3;
+        else if(diffDays > 15) phase = 2;
+        
+        bBadge.textContent = `Ph ${phase}`;
+        bBadge.classList.remove('hidden');
+    }
+
+    // 3. Leaderboard Rank (From Cache)
+    const rBadge = document.getElementById('badge-rank');
+    if(rBadge && leaderboardCache.length > 0 && currentUser) {
+        const myRank = leaderboardCache.findIndex(u => u.id === currentUser.uid);
+        if(myRank > -1) {
+            rBadge.textContent = `#${myRank + 1}`;
+            rBadge.classList.remove('hidden');
+        }
+    }
+};
 
 // --- PLANNER FUNCTIONS ---
 
@@ -3086,7 +3157,9 @@ window.renderAll = function() {
     renderHeader();
     updateHeaderPrayerBtn();
     renderStats();
-    
+    updateSidebarBadges();
+
+
     // Performance Optimization: Lazy Rendering
     if (state.activeView === 'overview') {
         renderTasks();
@@ -3109,6 +3182,7 @@ window.renderAll = function() {
     // Re-scan icons if library is loaded
     if(window.lucide) lucide.createIcons();
 };
+
 window.renderTasks = renderTasks;
         function renderHeader() {
             const els = { date: document.getElementById('overview-date'), agendaDate: document.getElementById('agenda-date-display') };
@@ -4170,4 +4244,22 @@ document.addEventListener('mousemove', (e) => {
         const y = (window.innerHeight - e.pageY * speed) / 100;
         layer.style.transform = `translateX(${x}px) translateY(${y}px)`;
     });
+});
+
+// ✅ AUTO-FIX: Close mobile menu when resizing to PC view
+window.addEventListener('resize', () => {
+    if (window.innerWidth >= 768) {
+        // If screen becomes desktop width, ensure mobile overlays are gone
+        const overlay = document.getElementById('mobile-menu-overlay');
+        const sidebar = document.getElementById('sidebar');
+        
+        if (overlay) overlay.classList.add('hidden');
+        if (sidebar) {
+            // Reset specific mobile classes if necessary, 
+            // but the CSS md:translate-x-0 handles the main visibility.
+            sidebar.classList.add('-translate-x-full'); // Reset toggle state
+            sidebar.classList.remove('translate-x-0');
+        }
+        document.body.classList.remove('overflow-hidden'); // Restore scrolling
+    }
 });
