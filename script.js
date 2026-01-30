@@ -2183,36 +2183,27 @@ window.addTask = function(text, type = 'main', subject = 'General', chapter = nu
             }
         };
 
-        window.deleteGroup = function(chapterName) {
-            if(confirm(`Delete all tasks for "${chapterName}"?`)) {
-                const key = formatDateKey(state.selectedDate);
-                if(state.tasks[key]) {
-                     state.tasks[key] = state.tasks[key].filter(t => {
-                        let chap = t.chapter;
-                        if (!chap && t.text.startsWith("Study: ")) {
-                            const parts = t.text.replace("Study: ", "").split(" - ");
-                            if (parts.length > 1) chap = parts[0];
-                        }
-                        return chap !== chapterName;
-                    });
-                    saveData();
-                    if (state.expandedFocusGroups[chapterName]) delete state.expandedFocusGroups[chapterName];
-                    renderAll();
-                }
+      window.deleteGroup = function(chapterName) {
+    // ✅ NO CONFIRMATION: Deletes immediately
+    const key = formatDateKey(state.selectedDate);
+    if(state.tasks[key]) {
+        state.tasks[key] = state.tasks[key].filter(t => {
+            let chap = t.chapter;
+            if (!chap && t.text.startsWith("Study: ")) {
+                const parts = t.text.replace("Study: ", "").split(" - ");
+                if (parts.length > 1) chap = parts[0];
             }
-        };
-
-        window.toggleTask = function(id) {
-            const key = formatDateKey(state.selectedDate);
-            if(state.tasks[key]) {
-                const t = state.tasks[key].find(x => x.id === id);
-                if(t) { 
-                    t.completed = !t.completed; 
-                    saveData();
-                    renderAll(); 
-                }
-            }
-        };     
+            return chap !== chapterName;
+        });
+        
+        saveData();
+        if (state.expandedFocusGroups[chapterName]) delete state.expandedFocusGroups[chapterName];
+        renderAll();
+        
+        // Optional: Feedback
+        showToast(`Deleted group: ${chapterName}`);
+    }
+};  
         
         window.toggleTask = function(id) {
             const key = formatDateKey(state.selectedDate);
