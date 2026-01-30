@@ -2948,19 +2948,17 @@ renderHeaderPrayerWidget();
 
 window.renderTasks = renderTasks;
 
-
 window.renderHeader = function() {
     const container = document.getElementById('header-dynamic-greeting');
     if (!container) return;
 
-    
-// 1. IF OVERVIEW: Show Date Switcher
+    // 1. IF OVERVIEW: Show Date Switcher
     if (state.activeView === 'overview') {
         const isToday = formatDateKey(state.selectedDate) === formatDateKey(new Date());
         
         const dateDisplay = isToday 
             ? `<span class="font-extrabold text-brand-600 dark:text-brand-400">Today</span>` 
-            : state.selectedDate.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }); // Removed Month on tiny screens if needed, but 'short' is usually fine.
+            : state.selectedDate.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
 
         container.innerHTML = `
             <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-lg md:rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -2977,8 +2975,7 @@ window.renderHeader = function() {
                 </button>
             </div>
         `;
-    }
-     
+    } 
     // 2. OTHER VIEWS: Show Page Title
     else {
         const titles = {
@@ -2998,12 +2995,10 @@ window.renderHeader = function() {
         `;
     }
 
-    // 3. Render Widgets (Prayer Strip)
     if(typeof window.renderHeaderPrayerWidget === 'function') {
         window.renderHeaderPrayerWidget();
     }
     
-    // 4. Refresh Icons
     if(window.lucide) lucide.createIcons({ root: container });
 };
 
