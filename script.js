@@ -3633,10 +3633,9 @@ function renderTasks() {
             if(state.nextExam) scanSyllabus(state.nextExam.syllabus, 'main');
             if(typeof backlogPlan !== 'undefined') scanSyllabus(backlogPlan.syllabus, 'backlog');
 
-     // 4. Render "READY" Cards (Smart Grouping)
+     
+// 4. Render "READY" Cards (Smart Grouping - ALWAYS BUNDLE)
             if(readyTests.length > 0) {
-                let finalHtml = '';
-
                 // Helper to generate a single card HTML
                 const generateCard = (test, isGrouped = false) => {
                     const subSummary = test.subs.slice(0, 3).join(', ') + (test.subs.length > 3 ? '...' : '');
@@ -3665,41 +3664,37 @@ function renderTasks() {
                     </div>`;
                 };
 
-                if (readyTests.length === 1) {
-                    // CASE 1: Single Test -> Show normally
-                    finalHtml = generateCard(readyTests[0]);
-                } else {
-                    // CASE 2: Multiple Tests -> Show Stack Bundle
-                    const bundleId = `unlock-bundle-${Date.now()}`;
-                    
-                    finalHtml = `
-                    <div class="mb-6 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-1 shadow-xl shadow-indigo-500/20 animate-in slide-in-from-top-2 fade-in duration-300 cursor-pointer select-none group" onclick="const el = document.getElementById('${bundleId}'); el.classList.toggle('hidden'); this.querySelector('.arrow-icon').classList.toggle('rotate-180');">
-                        <div class="bg-white/10 backdrop-blur-md p-4 rounded-lg flex justify-between items-center border border-white/10 hover:bg-white/20 transition-all">
-                            <div class="flex items-center gap-4">
-                                <div class="bg-white p-2.5 rounded-xl text-indigo-600 shadow-sm relative">
-                                    <i data-lucide="layers" class="w-6 h-6"></i>
-                                    <div class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-indigo-600">${readyTests.length}</div>
-                                </div>
-                                <div class="text-white">
-                                    <h3 class="font-bold text-lg leading-tight">Tests Ready!</h3>
-                                    <p class="text-xs text-indigo-100 font-medium opacity-80">Tap to expand stack</p>
+                // --- ALWAYS BUNDLE LOGIC ---
+                const bundleId = `unlock-bundle-${Date.now()}`;
+                
+                const finalHtml = `
+                <div class="mb-6 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-1 shadow-xl shadow-indigo-500/20 animate-in slide-in-from-top-2 fade-in duration-300 cursor-pointer select-none group" onclick="const el = document.getElementById('${bundleId}'); el.classList.toggle('hidden'); this.querySelector('.arrow-icon').classList.toggle('rotate-180');">
+                    <div class="bg-white/10 backdrop-blur-md p-4 rounded-lg flex justify-between items-center border border-white/10 hover:bg-white/20 transition-all">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-white p-2.5 rounded-xl text-indigo-600 shadow-sm relative">
+                                <i data-lucide="layers" class="w-6 h-6"></i>
+                                <div class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-indigo-600">
+                                    ${readyTests.length}
                                 </div>
                             </div>
-                            <div class="bg-black/20 p-2 rounded-full arrow-icon transition-transform duration-300">
-                                <i data-lucide="chevron-down" class="w-5 h-5 text-white"></i>
+                            <div class="text-white">
+                                <h3 class="font-bold text-lg leading-tight">Tests Ready!</h3>
+                                <p class="text-xs text-indigo-100 font-medium opacity-80">Tap to expand stack</p>
                             </div>
                         </div>
+                        <div class="bg-black/20 p-2 rounded-full arrow-icon transition-transform duration-300">
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-white"></i>
+                        </div>
                     </div>
-                    
-                    <div id="${bundleId}" class="hidden pl-2 border-l-2 border-indigo-100 dark:border-indigo-900/30 mb-8 space-y-4">
-                        ${readyTests.map(test => generateCard(test, true)).join('')}
-                    </div>
-                    `;
-                }
+                </div>
+                
+                <div id="${bundleId}" class="hidden pl-2 border-l-2 border-indigo-100 dark:border-indigo-900/30 mb-8 space-y-4">
+                    ${readyTests.map(test => generateCard(test, true)).join('')}
+                </div>
+                `;
 
                 list.insertAdjacentHTML('beforeend', finalHtml);
-            }       
-
+            }
 
             // --- END NEW LOGIC ---
 
