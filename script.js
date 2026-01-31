@@ -8,18 +8,30 @@ window.onerror = function(msg, url, line) {
         txt.textContent = `${msg}`;
     }
 };
-window.showToast = function(message) {
-    // 1. Create Wrapper for POSITIONING (Fixed, Centered, No Animation)
-    // This ensures the element stays perfectly centered regardless of inner animations
+
+  window.showToast = function(message, type = 'success') {
     const wrapper = document.createElement('div');
     wrapper.className = "fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] pointer-events-none";
 
-    // 2. Create Toast for STYLING & ANIMATION
-    // We removed the positioning classes from here to avoid conflicts
+    // Icon based on type
+    const icons = {
+        success: 'check-circle',
+        error: 'alert-circle',
+        info: 'info',
+        warning: 'alert-triangle'
+    };
+    
+    const colors = {
+        success: 'text-emerald-500',
+        error: 'text-red-500',
+        info: 'text-brand-500',
+        warning: 'text-amber-500'
+    };
+
     const toast = document.createElement('div');
     toast.className = "bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-2xl font-bold text-sm shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300 pointer-events-auto";
-    toast.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4 text-brand-500"></i> ${message}`;
-    
+    toast.innerHTML = `<i data-lucide="${icons[type]}" class="w-5 h-5 ${colors[type]}"></i> ${message}`;  
+
     // 3. Assemble
     wrapper.appendChild(toast);
     document.body.appendChild(wrapper);
@@ -96,6 +108,49 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
                 return doc(db, 'users', uid, collectionName, docName);
             }
         }
+
+// ==========================================
+// ✨ ANIMATED NUMBER COUNTER
+// ==========================================
+function animateNumber(elementId, targetValue, duration = 1000) {
+    const element = document.getElementById(elementId);
+    
+    // If element doesn't exist, just exit
+    if (!element) {
+        console.log('Element not found:', elementId);
+        return;
+    }
+    
+    // Get current value (what's showing now)
+    const currentText = element.textContent || '0';
+    const startValue = parseInt(currentText.replace(/[^0-9]/g, '')) || 0;
+    
+    // Calculate how much to change
+    const difference = targetValue - startValue;
+    const startTime = Date.now();
+    
+    // Function that runs every frame
+    function update() {
+        const currentTime = Date.now();
+        const elapsed = currentTime - startTime;
+        
+        if (elapsed < duration) {
+            // Still animating - calculate current value
+            const progress = elapsed / duration;
+            const currentValue = startValue + (difference * progress);
+            element.textContent = Math.round(currentValue);
+            
+            // Keep animating
+            requestAnimationFrame(update);
+        } else {
+            // Animation done - set final value
+            element.textContent = targetValue;
+        }
+    }
+    
+    // Start the animation!
+    update();
+}
 
  // ==========================================
  // ==========================================
@@ -1708,6 +1763,12 @@ window.renderNamazView = function() {
 
     let bestName = "None yet";
     let worstName = "All";
+    // Animate the numbers instead of just showing them
+setTimeout(() => {
+    animateNumber('stat-prayers-total', stats.total, 800);
+    animateNumber('stat-consistency', stats.rate, 800);
+    animateNumber('stat-streak', stats.streak, 800);
+}, 100);
     
     if (stats.total > 0) {
         bestName = entries[0][0]; 
@@ -3425,6 +3486,7 @@ window.renderStats = function() {
         }       
 
 function renderTasks() {
+
             const list = document.getElementById('overview-task-list');
             if(!list) return;
             const k = formatDateKey(state.selectedDate);
@@ -3545,7 +3607,7 @@ function renderTasks() {
             // --- STANDARD TASK RENDERING ---
             if(tasks.length === 0 && readyTests.length === 0) {
                 list.innerHTML = `<div class="h-40 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 text-sm"><i data-lucide="coffee" class="w-8 h-8 mb-2 opacity-50"></i>No focus targets set.</div>`;
-                if(window.lucide) lucide.createIcons({ root: list });
+                if(window.lucide) lucide.createIcons({ root: list });        
                 return;
             }
 
