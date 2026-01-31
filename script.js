@@ -844,7 +844,7 @@ const backlogPlan = {
                {name:"DT-46 (Phy-XI)", subs:["Periodic Motion & SHM Equation", "Phase & Phase Difference"]},
                {name:"DT-47 (Phy-XI)", subs:["Velocity & Acceleration in SHM", "Graphs of SHM"]},
                {name:"DT-48 (Phy-XI)", subs:["Energy in SHM (KE, PE, Total)", "Spring-Mass Systems (Series/Parallel)"]},
-               {name:"DT-49 (Phy-XI)", subs:["Simple Pendulum", "Damped & Forced Oscillations"]}
+               
            ]
        },
        {
@@ -914,20 +914,12 @@ const backlogPlan = {
                {name:"DT-34 (Phy-XI)", subs:["Hooke's Law & Moduli of Elasticity", "Elastic Potential Energy"]}
            ]
        },
-       {
-           phase: 2, unit: "Bulk Matter", subject: "Physics", topic: "Mechanical Properties of Fluids",
-           dailyTests: [
-               {name:"DT-35 (Phy-XI)", subs:["Pressure & Pascal's Law", "Archimedes Principle"]},
-               {name:"DT-36 (Phy-XI)", subs:["Streamline Flow & Continuity Eq", "Bernoulli's Principle"]},
-               {name:"DT-37 (Phy-XI)", subs:["Viscosity & Stokes Law", "Surface Tension & Capillarity"]}
-           ]
-       },
-       {
+              {
            phase: 2, unit: "Bulk Matter", subject: "Physics", topic: "Thermal Properties of Matter",
            dailyTests: [
                {name:"DT-38 (Phy-XI)", subs:["Temperature & Scales", "Thermal Expansion (Solids/Liquids)"]},
                {name:"DT-39 (Phy-XI)", subs:["Calorimetry & Phase Change", "Heat Transfer (Conduction/Convection)"]},
-               {name:"DT-40 (Phy-XI)", subs:["Radiation & Newton's Law of Cooling", "Wien's Displacement Law"]}
+               {name:"DT-40 (Phy-XI)", subs:["Radiation & Newton's Law of Cooling"]}
            ]
        },
 
@@ -1097,16 +1089,7 @@ const backlogPlan = {
        // ============================================================
 
        // --- PHYSICS: Unit 5 & 6 (Mechanics II) ---
-       {
-           phase: 4, unit: "Mechanics II", subject: "Physics", topic: "System of Particles (Rotation)",
-           dailyTests: [
-               {name:"DT-22 (Phy-XI)", subs:["Centre of Mass (Discrete/Continuous)", "Motion of CoM"]},
-               {name:"DT-23 (Phy-XI)", subs:["Vector Product & Angular Velocity", "Torque & Angular Momentum"]},
-               {name:"DT-24 (Phy-XI)", subs:["Moment of Inertia", "Theorems of Parallel/Perpendicular Axes"]},
-               {name:"DT-25 (Phy-XI)", subs:["Kinematics of Rotation", "Rolling Motion"]}
-           ]
-       },
-       {
+              {
            phase: 4, unit: "Mechanics II", subject: "Physics", topic: "Gravitation",
            dailyTests: [
                {name:"DT-28 (Phy-XI)", subs:["Newton's Law of Gravitation", "Acceleration due to Gravity (g)"]},
