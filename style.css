@@ -637,3 +637,74 @@ button {
         transition-duration: 0.01ms !important;
     }
 }
+/* ========================================
+   🌙 SPIRITUAL & RAMADAN THEME ADDITIONS
+   ======================================== */
+
+/* 1. Golden Text Gradient (for "Ramadan 2026" Title) */
+.text-gradient-gold {
+    background: linear-gradient(135deg, #FFF 0%, #fcd34d 40%, #fbbf24 60%, #FFF 100%);
+    background-size: 200% auto;
+    color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: shine-gold 5s linear infinite;
+}
+
+@keyframes shine-gold {
+    to { background-position: 200% center; }
+}
+
+/* 2. "Noor" (Holy Light) Pulse Animation */
+.animate-pulse-slow {
+    animation: pulse-glow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { opacity: 1; box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); }
+    50% { opacity: 0.8; box-shadow: 0 0 50px rgba(16, 185, 129, 0.6); }
+}
+
+/* 3. Emerald Glass Effect (For Timer Boxes) */
+.glass-emerald {
+    background: rgba(6, 78, 59, 0.4); /* Dark Emerald Tint */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* 4. Geometric Pattern Overlay (CSS Only backup for the image) */
+.bg-pattern-islamic {
+    background-color: transparent;
+    background-image: 
+        radial-gradient(circle at 50% 50%, transparent 0%, transparent 60%, rgba(16, 185, 129, 0.05) 61%),
+        linear-gradient(45deg, rgba(16, 185, 129, 0.03) 25%, transparent 25%, transparent 75%, rgba(16, 185, 129, 0.03) 75%),
+        linear-gradient(45deg, rgba(16, 185, 129, 0.03) 25%, transparent 25%, transparent 75%, rgba(16, 185, 129, 0.03) 75%);
+    background-size: 40px 40px;
+    background-position: 0 0, 0 0, 20px 20px;
+}
+
+/* 5. Majestic Float Animation (For Cards) */
+.float-majestic {
+    animation: float-majestic 8s ease-in-out infinite;
+}
+
+@keyframes float-majestic {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+}
+
+/* 6. Shimmer Animation for Stats Bars */
+@keyframes shimmer {
+    100% { transform: translateX(100%); }
+}
+
+/* 7. Scrollbar hide fix for the calendar grid */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
