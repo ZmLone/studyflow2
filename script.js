@@ -1729,18 +1729,16 @@ const hadithCollection = [
 ];
 
 // 3. MAIN RENDER FUNCTION
+// 3. MAIN RENDER FUNCTION (UPDATED WITH ISLAMIC THEME CLASSES)
 window.renderNamazView = function() {
     // --- A. RAMADAN COUNTDOWN (Target: Feb 19, 2026) ---
     const ramadanDate = new Date('2026-02-19T00:00:00'); // Srinagar Start Date
     
-    // Clear existing interval
     if (window.ramadanTimerInterval) clearInterval(window.ramadanTimerInterval);
 
-    // Render Container
     const container = document.getElementById('view-namaz');
     if (!container) return;
     
-    // Check if user has a stored sleep preference (Default 2 hours)
     const sleepPref = localStorage.getItem('studyflow_sehri_buffer') || '2'; 
 
     let html = `
@@ -1754,20 +1752,19 @@ window.renderNamazView = function() {
     <div class="flex-1 overflow-y-auto custom-scroll p-4 md:p-8 pb-32">
         <div class="max-w-5xl mx-auto space-y-8">
             
-            <div class="relative overflow-hidden rounded-3xl p-8 shadow-2xl group transition-all duration-500 border border-emerald-500/30">
-                <div class="absolute inset-0 bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900 z-0"></div>
-                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] opacity-10 z-0"></div>
+            <div class="relative overflow-hidden rounded-3xl p-8 shadow-2xl group transition-all duration-500 border border-emerald-500/30 bg-emerald-900">
+                <div class="absolute inset-0 bg-pattern-islamic opacity-20 z-0"></div>
+                <div class="absolute inset-0 bg-gradient-to-br from-emerald-950 via-teal-900 to-slate-900 opacity-90 z-0"></div>
                 
-                <div class="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                <div class="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
-
+                <div class="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 animate-pulse-slow"></div>
+                
                 <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
-                    <div>
+                    <div class="float-majestic">
                         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[10px] font-bold uppercase tracking-wider mb-3 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 19 Feb 2026 (Srinagar)
+                            <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span> 19 Feb 2026 (Srinagar)
                         </div>
-                        <h2 class="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-100 to-emerald-200 drop-shadow-sm mb-2">Ramadan 2026</h2>
-                        <p class="text-emerald-100/70 text-sm max-w-md mx-auto md:mx-0 font-medium">"O you who have believed, decreed upon you is fasting... that you may become righteous."</p>
+                        <h2 class="text-4xl md:text-6xl font-black text-gradient-gold drop-shadow-sm mb-2 font-serif tracking-tight">Ramadan 2026</h2>
+                        <p class="text-emerald-100/80 text-sm max-w-md mx-auto md:mx-0 font-medium italic">"O you who have believed, decreed upon you is fasting... that you may become righteous."</p>
                     </div>
                     
                     <div id="ramadan-timer-display" class="flex gap-3">
@@ -1789,9 +1786,9 @@ window.renderNamazView = function() {
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-3">Wake Up Buffer (Before Sehri)</label>
                             <div class="flex gap-2" id="buffer-buttons">
-                                <button onclick="setBuffer('1')" class="flex-1 py-3 px-2 rounded-xl border-2 font-bold text-sm transition-all ${sleepPref === '1' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:border-indigo-300'}">1 Hr Before</button>
-                                <button onclick="setBuffer('2')" class="flex-1 py-3 px-2 rounded-xl border-2 font-bold text-sm transition-all ${sleepPref === '2' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:border-indigo-300'}">2 Hrs Before</button>
-                                <button onclick="setBuffer('3')" class="flex-1 py-3 px-2 rounded-xl border-2 font-bold text-sm transition-all ${sleepPref === '3' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:border-indigo-300'}">3 Hrs Before</button>
+                                <button onclick="setBuffer('1')" class="flex-1 py-3 px-2 rounded-xl border-2 font-bold text-sm transition-all">1 Hr Before</button>
+                                <button onclick="setBuffer('2')" class="flex-1 py-3 px-2 rounded-xl border-2 font-bold text-sm transition-all">2 Hrs Before</button>
+                                <button onclick="setBuffer('3')" class="flex-1 py-3 px-2 rounded-xl border-2 font-bold text-sm transition-all">3 Hrs Before</button>
                             </div>
                             <p class="text-xs text-slate-400 mt-2">Calculates bedtime to get exactly <b class="text-indigo-500">5 hours</b> of sleep.</p>
                         </div>
@@ -1845,15 +1842,50 @@ window.renderNamazView = function() {
         </div>
     </div>`;
 
-    container.innerHTML = html; // Inject HTML first
+    container.innerHTML = html; 
     
-    // --- B. START LOGIC ---
+    // --- B. START LOGIC (WITH NEW BOX STYLING) ---
     startRamadanTimer(ramadanDate);
     updateSleepCalculator(sleepPref);
     calculateAndRenderStats();
     renderUniqueHadith();
 
     if(window.lucide) lucide.createIcons({ root: container });
+};
+
+// 4. HELPER: TIMER LOGIC (WITH GLASS-EMERALD CLASS)
+window.startRamadanTimer = function(targetDate) {
+    const display = document.getElementById('ramadan-timer-display');
+    
+    const update = () => {
+        const now = new Date();
+        const diff = targetDate - now;
+
+        if (diff <= 0) {
+            display.innerHTML = "<span class='text-white font-bold text-2xl animate-pulse'>Ramadan Mubarak! 🌙</span>";
+            return;
+        }
+
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+        // APPLIED: glass-emerald class here
+        const boxClass = "glass-emerald flex flex-col items-center justify-center rounded-xl p-2 md:p-3 min-w-[60px] md:min-w-[70px] transition-transform hover:scale-105";
+        const numClass = "text-2xl md:text-3xl font-black text-white font-mono leading-none drop-shadow-md";
+        const labelClass = "text-[9px] font-bold text-emerald-200 uppercase mt-1 tracking-widest";
+
+        display.innerHTML = `
+            <div class="${boxClass}"><span class="${numClass}">${d}</span><span class="${labelClass}">Days</span></div>
+            <div class="${boxClass}"><span class="${numClass}">${h}</span><span class="${labelClass}">Hrs</span></div>
+            <div class="${boxClass}"><span class="${numClass}">${m}</span><span class="${labelClass}">Mins</span></div>
+            <div class="${boxClass}"><span class="${numClass}">${s}</span><span class="${labelClass}">Secs</span></div>
+        `;
+    };
+    
+    update();
+    window.ramadanTimerInterval = setInterval(update, 1000);
 };
 
 // 4. HELPER: SLEEP CALCULATOR LOGIC
