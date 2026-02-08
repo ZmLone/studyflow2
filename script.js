@@ -1342,7 +1342,7 @@ setInterval(() => {
         renderAll();     // Update the UI
         showToast("📅 Syllabus updated for next target!");
     }
-}, 5000); // Checks every 5 seconds
+}, 5000); // Checks every 5 seconds`
     setupSchedule(); 
     initScrollHeader(); 
     checkSyllabusOverlap();
@@ -2190,27 +2190,30 @@ function calculateSmartMath(type) {
     return { daysLeft, totalPoints, remainingPoints, dailyTargetPoints, pendingTasks, syllabusRef: syllabus };
 }   
   
-        // --- 3. HELPER: CALCULATE POINTS ALREADY IN PLANNER ---
-        function getPlannerPointsForToday(mode, syllabusRef) {
-            const k = formatDateKey(state.selectedDate);
-            const tasks = state.tasks[k] || [];
-            let sum = 0;
+       // --- 3. HELPER: CALCULATE POINTS ALREADY IN PLANNER ---
+function getPlannerPointsForToday(mode, syllabusRef) {
+    const k = formatDateKey(state.selectedDate);
+    const tasks = state.tasks[k] || [];
+    let sum = 0;
 
-            tasks.forEach(t => {
-                // Try to find this task in the syllabus to get its point value
-                // We scan the syllabusRef passed from calculateSmartMath
-                syllabusRef.forEach(chap => {
-                    chap.dailyTests.forEach(dt => {
-                        dt.subs.forEach(sub => {
-                            if (t.text.includes(sub)) {
-                                sum += getSubtopicPoints(dt, chap.subject, chap.topic);
-                            }
-                        });
-                    });
+    tasks.forEach(t => {
+        // ✅ CRITICAL FIX: Only count tasks that match the requested mode
+        // If mode is 'main', ignore 'backlog' tasks, and vice versa.
+        if (t.type !== mode) return; 
+
+        // Try to find this task in the syllabus to get its point value
+        syllabusRef.forEach(chap => {
+            chap.dailyTests.forEach(dt => {
+                dt.subs.forEach(sub => {
+                    if (t.text.includes(sub)) {
+                        sum += getSubtopicPoints(dt, chap.subject, chap.topic);
+                    }
                 });
             });
-            return sum;
-        }
+        });
+    });
+    return sum;
+}
 
   // ==========================================
 // ⚡ MODERN SMART MIX CONTROLLER
@@ -2237,7 +2240,7 @@ window.generateSmartMix = function(mode = 'main') {
 
     let currentPoints = 0;
     let mixPool = [];
-    const SAFE_CAP = 12; 
+    const SAFE_CAP = 50; 
 
     while (currentPoints < pointsNeeded && mixPool.length < SAFE_CAP && math.pendingTasks.length > 0) {
         const heavySubject = Object.keys(subjectLoad).reduce((a, b) => 
