@@ -3315,7 +3315,6 @@ window.renderStats = function() {
     if (!container) return;
 
     // --- 1. DETERMINE ACTIVE BACKLOG PHASE ---
-    // We calculate this first to filter data correctly
     const planStart = (typeof backlogPlan !== 'undefined') ? backlogPlan.startDate : new Date();
     const now = new Date();
     const diffTime = now - planStart;
@@ -3327,7 +3326,6 @@ window.renderStats = function() {
     else if(diffDays > 15) currentPhase = 2;
 
     // --- 2. PREPARE SYLLABUS DATA ---
-    // Main Exam: Uses everything
     const mainSyllabus = state.nextExam ? state.nextExam.syllabus : [];
     
     // Backlog: STRICTLY filter to ONLY the current phase
@@ -3336,9 +3334,6 @@ window.renderStats = function() {
         : [];
 
     // --- 3. CORE CALCULATIONS ---
-    // We re-use the smart math logic but pass our filtered syllabus
-    // Note: calculateSmartMath usually grabs data internally, so we simulate it here for stats
-    
     const getDailyData = (syllabus) => {
         const k = formatDateKey(state.selectedDate);
         const tasks = state.tasks[k] || [];
@@ -3361,7 +3356,7 @@ window.renderStats = function() {
     };
 
     const execMain = getDailyData(mainSyllabus);
-    const execBacklog = getDailyData(backlogSyllabus); // Uses filtered list
+    const execBacklog = getDailyData(backlogSyllabus);
 
     // Recalculate Targets based on filtered lists
     const getTarget = (syllabus, endDateStr) => {
@@ -3394,9 +3389,8 @@ window.renderStats = function() {
         };
     };
 
-    // Dates: Main Exam vs Current Phase End
-const mainStats = getTarget(mainSyllabus, state.nextExam.date);    
-    // Calculate Phase End Date dynamically
+    // Dates: Main Exam vs Phase End
+    const mainStats = getTarget(mainSyllabus, state.nextExam.date);    
     const phaseEndDate = new Date(planStart);
     phaseEndDate.setDate(planStart.getDate() + (currentPhase * 15));
     const backlogStats = getTarget(backlogSyllabus, phaseEndDate);
@@ -3415,7 +3409,7 @@ const mainStats = getTarget(mainSyllabus, state.nextExam.date);
     const velMain = getVelocityStatus(execMain.completed, mainStats.dailyTarget);
     const velBacklog = getVelocityStatus(execBacklog.completed, backlogStats.dailyTarget);
 
-    // --- 5. SUBJECT ANALYTICS (Filtered) ---
+    // --- 5. SUBJECT ANALYTICS ---
     const getSubjectBreakdown = (syllabus) => {
         const stats = { Physics: {t:0, d:0}, Chemistry: {t:0, d:0}, Biology: {t:0, d:0} };
         const allCompleted = new Set(Object.values(state.tasks).flat().filter(t => t.completed).map(t => t.text));
@@ -3441,9 +3435,8 @@ const mainStats = getTarget(mainSyllabus, state.nextExam.date);
     };
 
     const statsMain = getSubjectBreakdown(mainSyllabus);
-    const statsBacklog = getSubjectBreakdown(backlogSyllabus); // Strict Phase Filtering Applied Here
+    const statsBacklog = getSubjectBreakdown(backlogSyllabus);
 
-    // Helper for rendering Subject Bars
     const renderSmartSubject = (subj, data, allData) => {
         const pct = data.total > 0 ? Math.round((data.done / data.total) * 100) : 0;
         
@@ -3479,7 +3472,6 @@ const mainStats = getTarget(mainSyllabus, state.nextExam.date);
         `;
     };
 
-    // Find Weakest Subject
     let weakestSub = "None";
     let lowest = 101;
     [statsMain, statsBacklog].forEach(grp => Object.entries(grp).forEach(([k, v]) => {
@@ -3487,12 +3479,11 @@ const mainStats = getTarget(mainSyllabus, state.nextExam.date);
         if(p < lowest) { lowest = p; weakestSub = k; }
     }));
 
-    // --- 6. RENDER HTML ---
+    // --- 6. RENDER HTML (CORRECTED) ---
     container.innerHTML = `
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
             
-
-<div class="relative overflow-hidden rounded-3xl p-6 bg-slate-900 dark:bg-black text-white shadow-xl flex flex-col justify-between group border border-slate-800">
+            <div class="relative overflow-hidden rounded-3xl p-6 bg-slate-900 dark:bg-black text-white shadow-xl flex flex-col justify-between group border border-slate-800">
                 <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-700">
                     <i data-lucide="zap" class="w-32 h-32 text-white"></i>
                 </div>
@@ -3507,7 +3498,6 @@ const mainStats = getTarget(mainSyllabus, state.nextExam.date);
                                 ${state.nextExam.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                             </div>
                         </div>
-
                         <div class="text-right">
                             <div class="text-2xl font-black leading-none">${mainStats.daysLeft}</div>
                             <div class="text-[9px] uppercase font-bold text-slate-500">Days Left</div>
@@ -3541,6 +3531,56 @@ const mainStats = getTarget(mainSyllabus, state.nextExam.date);
                         </div>
                         <div class="h-4 w-full bg-slate-800 rounded-full overflow-hidden border border-white/5">
                             <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all duration-1000 relative" style="width: ${velMain.percent}%">
+                                <div class="absolute inset-0 bg-white/20 w-full -translate-x-full animate-[shimmer_2s_infinite]"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative overflow-hidden rounded-3xl p-6 bg-slate-900 dark:bg-black text-white shadow-xl flex flex-col justify-between group border border-slate-800">
+                <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                    <i data-lucide="history" class="w-32 h-32 text-orange-500"></i>
+                </div>
+                
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-500/10 backdrop-blur-md border border-orange-500/20 text-[10px] font-bold uppercase tracking-wider text-orange-200">
+                            Backlog Phase ${currentPhase}
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-black leading-none text-orange-500">${backlogStats.daysLeft}</div>
+                            <div class="text-[9px] uppercase font-bold text-slate-500">Days Left</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <div class="text-3xl font-black tracking-tight mb-0.5 text-white">
+                                ${execBacklog.completed.toFixed(1)} <span class="text-sm text-slate-500 font-bold">/ ${backlogStats.dailyTarget.toFixed(1)}</span>
+                            </div>
+                            <div class="text-[9px] uppercase font-bold text-slate-400">Daily Velocity</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-3xl font-black tracking-tight mb-0.5 text-orange-400">
+                                ${backlogStats.coveragePct}%
+                            </div>
+                            <div class="text-[9px] uppercase font-bold text-slate-400">Phase Completion</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="relative flex h-2 w-2">
+                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${velBacklog.bg} opacity-75"></span>
+                                  <span class="relative inline-flex rounded-full h-2 w-2 ${velBacklog.bg}"></span>
+                                </span>
+                                <span class="text-xs font-bold ${velBacklog.color}">${velBacklog.label}</span>
+                            </div>
+                        </div>
+                        <div class="h-4 w-full bg-slate-800 rounded-full overflow-hidden border border-white/5">
+                            <div class="h-full bg-gradient-to-r from-orange-500 to-red-500 shadow-[0_0_15px_rgba(249,115,22,0.5)] transition-all duration-1000 relative" style="width: ${velBacklog.percent}%">
                                 <div class="absolute inset-0 bg-white/20 w-full -translate-x-full animate-[shimmer_2s_infinite]"></div>
                             </div>
                         </div>
@@ -3586,6 +3626,7 @@ const mainStats = getTarget(mainSyllabus, state.nextExam.date);
 
     if(window.lucide) lucide.createIcons({ root: container });
 };
+
  function createTaskElementHTML(t, isSubTask = false) {
             // Updated Styles for "Pill" look
             let wrapperClass = "group flex items-center justify-between p-3 rounded-2xl transition-all duration-200 border relative overflow-hidden ";
