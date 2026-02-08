@@ -812,4 +812,13 @@ button {
         opacity: 1;
         pointer-events: auto;
     }
+    
+    /* 3. SENSITIVITY FIX: Massive Hit Area for Chain (Mobile Only) */
+    /* This overrides the width/margin just in case, ensuring touch works */
+    #pull-chain-trigger {
+        width: 80px !important; 
+        margin-left: -2.5rem !important; /* Center the 80px box (-40px) */
+        background-color: transparent;
+        touch-action: manipulation;
+    }
 }
