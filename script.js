@@ -536,7 +536,7 @@ const mainSchedule = [
        ]
    },
 
-   // --- UT-11 (FEB 22) ---
+   // --- UT-11 (FEB 22) [EXPANDED SYLLABUS] ---
    {
        name: "UT-11",
        date: new Date('2026-02-22T00:00:00'),
@@ -565,18 +565,24 @@ const mainSchedule = [
                    {name:"DT-19 (Chem-XI)", subs:["Buffer Solutions", "Solubility Product"]}
                ]
            },
+           // EXPANDED: p-Block Elements (XII)
            {
                subject: "Chemistry",
-               topic: "p-Block Elements (XII Rev)",
+               topic: "p-Block Elements (XII)",
                dailyTests: [
-                   {name:"Rev (Chem-XII)", subs:["Group 15 Revision", "Group 16 Revision", "Group 17 Revision", "Group 18 Revision"]}
+                   {name:"DT-10 (Chem-XII)", subs:["Group 15 Elements", "Dinitrogen & Ammonia"]},
+                   {name:"DT-11 (Chem-XII)", subs:["Group 16 Elements", "Dioxygen & Ozone"]},
+                   {name:"DT-12 (Chem-XII)", subs:["Group 17 Elements (Halogens)", "Group 18 Elements (Noble Gases)"]}
                ]
            },
+           // EXPANDED: Organic Revision (Aldehydes, Ketones, Acids)
            {
                subject: "Chemistry",
-               topic: "Organic Revision",
+               topic: "Aldehydes, Ketones & Acids (Rev)",
                dailyTests: [
-                   {name:"Rev (Chem-XII)", subs:["Aldehydes Revision", "Ketones Revision", "Carboxylic Acids Revision"]}
+                   {name:"DT-23 (Chem-XII)", subs:["Aldehydes & Ketones: Prep Methods"]},
+                   {name:"DT-24 (Chem-XII)", subs:["Aldehydes & Ketones: Chemical Properties"]},
+                   {name:"DT-25 (Chem-XII)", subs:["Carboxylic Acids: Prep & Properties"]}
                ]
            },
            {
@@ -595,11 +601,13 @@ const mainSchedule = [
                    {name:"DT-20 (Bot-XII)", subs:["Energy Flow", "Ecological Pyramids"]}
                ]
            },
+           // EXPANDED: Biodiversity
            {
                subject: "Botany",
-               topic: "Biodiversity (Rev)",
+               topic: "Biodiversity",
                dailyTests: [
-                   {name:"Rev (Bot-XII)", subs:["Biodiversity Revision", "Conservation Revision"]}
+                   {name:"DT-21 (Bot-XII)", subs:["Patterns of Biodiversity", "Loss of Biodiversity"]},
+                   {name:"DT-22 (Bot-XII)", subs:["Biodiversity Conservation"]}
                ]
            },
            {
@@ -610,18 +618,24 @@ const mainSchedule = [
                    {name:"DT-22 (Zoo-XII)", subs:["Processes (PCR)", "Downstream Processing"]}
                ]
            },
+           // EXPANDED: Biotech Applications
            {
                subject: "Zoology",
-               topic: "Biotech Apps (Rev)",
+               topic: "Biotech Applications",
                dailyTests: [
-                   {name:"Rev (Zoo-XII)", subs:["Biotech Applications Revision"]}
+                   {name:"DT-23 (Zoo-XII)", subs:["Applications in Agriculture (Bt Cotton)"]},
+                   {name:"DT-24 (Zoo-XII)", subs:["Applications in Medicine (Insulin, Gene Therapy)"]}
                ]
            },
+           // EXPANDED: Human Reproduction (Rev)
            {
                subject: "Zoology",
-               topic: "Human Repro (Rev)",
+               topic: "Human Reproduction (Rev)",
                dailyTests: [
-                   {name:"Rev (Zoo-XII)", subs:["Human Reproduction Revision"]}
+                   {name:"DT-1 (Zoo-XII)", subs:["Male Reproductive System", "Female Reproductive System"]},
+                   {name:"DT-2 (Zoo-XII)", subs:["Gametogenesis (Spermatogenesis/Oogenesis)"]},
+                   {name:"DT-3 (Zoo-XII)", subs:["Menstrual Cycle", "Fertilization & Implantation"]},
+                   {name:"DT-4 (Zoo-XII)", subs:["Pregnancy, Parturition & Lactation"]}
                ]
            }
        ]
@@ -731,7 +745,7 @@ const mainSchedule = [
        ]
    },
 
-   // --- AIATS-7 (MAR 22) ---
+   // --- AIATS-7 (MAR 22) [EXPANDED SYLLABUS] ---
    {
        name: "AIATS-7",
        date: new Date('2026-03-22T00:00:00'),
@@ -746,11 +760,15 @@ const mainSchedule = [
                    {name:"DT-30 (Phy-XII)", subs:["Optical Instruments"]}
                ]
            },
+           // EXPANDED: Modern Physics (Rev)
            {
                subject: "Physics",
-               topic: "Modern Physics (Rev)",
+               topic: "Modern Physics",
                dailyTests: [
-                   {name:"Rev (Phy-XII)", subs:["Dual Nature Revision", "Atoms Revision", "Nuclei Revision"]}
+                   {name:"DT-31 (Phy-XII)", subs:["Dual Nature: Photoelectric Effect"]},
+                   {name:"DT-32 (Phy-XII)", subs:["Dual Nature: Matter Waves"]},
+                   {name:"DT-33 (Phy-XII)", subs:["Atoms: Bohr Model"]},
+                   {name:"DT-34 (Phy-XII)", subs:["Nuclei: Binding Energy & Radioactivity"]}
                ]
            },
            {
@@ -760,26 +778,32 @@ const mainSchedule = [
                    {name:"DT-27 (Chem-XII)", subs:["Carbohydrates", "Proteins", "Nucleic Acids"]}
                ]
            },
+           // EXPANDED: p-Block Elements (Rev)
            {
                subject: "Chemistry",
-               topic: "p-Block (Rev)",
+               topic: "p-Block Elements (Rev)",
                dailyTests: [
-                   {name:"Rev (Chem-XII)", subs:["p-Block Revision"]}
+                   {name:"DT-10 (Chem-XII)", subs:["Group 15 Elements", "Group 16 Elements"]},
+                   {name:"DT-11 (Chem-XII)", subs:["Group 17 Elements", "Group 18 Elements"]}
                ]
            },
+           // EXPANDED: Ecology (Rev)
            {
                subject: "Botany",
-               topic: "Ecology (Rev)",
+               topic: "Ecology Unit (Rev)",
                dailyTests: [
-                   {name:"Rev (Bot-XII)", subs:["Ecology Revision"]}
+                   {name:"DT-17 (Bot-XII)", subs:["Organisms & Pop: Abiotic Factors"]},
+                   {name:"DT-19 (Bot-XII)", subs:["Ecosystem: Structure & Function"]},
+                   {name:"DT-21 (Bot-XII)", subs:["Biodiversity & Conservation"]}
                ]
            },
+           // EXPANDED: Biotech (Rev)
            {
                subject: "Zoology",
-               topic: "Biotech (Rev)",
+               topic: "Biotech Unit (Rev)",
                dailyTests: [
-                   {name:"DT-25 (Zoo-XII)", subs:["Transgenic Animals", "Biopiracy"]},
-                   {name:"Rev (Zoo-XII)", subs:["Biotech Revision"]}
+                   {name:"DT-21 (Zoo-XII)", subs:["Biotech Principles: Tools & Processes"]},
+                   {name:"DT-23 (Zoo-XII)", subs:["Biotech Applications: Agri & Med"]}
                ]
            }
        ]
@@ -827,6 +851,7 @@ const mainSchedule = [
        syllabus: [ { subject: "General", topic: "Full Syllabus NEET Pattern", dailyTests: [{name:"Mock-8", subs:["Complete Physics", "Complete Chemistry", "Complete Biology"]}] } ]
    }
 ];
+
 // --- REPLACED BACKLOG PLAN (Detailed & Complete Class 11 Syllabus) ---
 const backlogPlan = {
    name: "60-Day Recovery",
