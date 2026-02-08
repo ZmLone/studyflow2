@@ -3499,8 +3499,8 @@ const mainStats = getTarget(mainSyllabus, state.nextExam.date);
                 <div class="relative z-10">
                     <div class="flex justify-between items-start mb-6">
                         <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase tracking-wider text-slate-300">
-                            Main Target
-                        </div>
+${state.nextExam.name}
+</div>
                         <div class="text-right">
                             <div class="text-2xl font-black leading-none">${mainStats.daysLeft}</div>
                             <div class="text-[9px] uppercase font-bold text-slate-500">Days Left</div>
