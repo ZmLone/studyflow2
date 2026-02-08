@@ -817,9 +817,10 @@ button {
     /* This overrides the width/margin just in case, ensuring touch works */
     #pull-chain-trigger {
         width: 90px !important; 
-        margin-left: -2.0rem !important; /* Center the 80px box (-40px) */
+        margin-left: -1.8rem !important; /* Center the 80px box (-40px) */
         background-color: transparent;
         touch-action: manipulation;
     }
 }
+
 
