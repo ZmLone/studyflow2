@@ -1,4 +1,5 @@
 
+
 window.onerror = function(msg, url, line) {
     console.error("Global Error:", msg);
     const el = document.getElementById('global-error');
@@ -1331,6 +1332,17 @@ window.checkSyllabusOverlap = function() {
     }
 };
 function init() {
+    
+    // Add this inside init()
+setInterval(() => {
+    const now = new Date();
+    // Check if it's exactly 5:00 PM (or just past it)
+    if (now.getHours() === 17 && now.getMinutes() === 0 && now.getSeconds() < 5) {
+        setupSchedule(); // Re-run the selection logic
+        renderAll();     // Update the UI
+        showToast("📅 Syllabus updated for next target!");
+    }
+}, 5000); // Checks every 5 seconds
     setupSchedule(); 
     initScrollHeader(); 
     checkSyllabusOverlap();
@@ -3355,8 +3367,7 @@ window.renderStats = function() {
     };
 
     // Dates: Main Exam vs Current Phase End
-    const mainStats = getTarget(mainSyllabus, '2026-02-07T00:00:00');
-    
+const mainStats = getTarget(mainSyllabus, state.nextExam.date);    
     // Calculate Phase End Date dynamically
     const phaseEndDate = new Date(planStart);
     phaseEndDate.setDate(planStart.getDate() + (currentPhase * 15));
