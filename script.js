@@ -3523,15 +3523,21 @@ ${state.nextExam.name}
                     </div>
 
                     <div>
-                        <div class="flex justify-between items-end mb-2">
-                            <div class="flex items-center gap-2">
-                                <span class="relative flex h-2 w-2">
-                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${velMain.bg} opacity-75"></span>
-                                  <span class="relative inline-flex rounded-full h-2 w-2 ${velMain.bg}"></span>
-                                </span>
-                                <span class="text-xs font-bold ${velMain.color}">${velMain.label}</span>
+                        <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">
+                                ${state.nextExam.name}
+                            </div>
+                            <div class="text-sm font-bold text-white pl-0.5">
+                                ${state.nextExam.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                             </div>
                         </div>
+
+                        <div class="text-right">
+                            <div class="text-2xl font-black leading-none">${mainStats.daysLeft}</div>
+                            <div class="text-[9px] uppercase font-bold text-slate-500">Days Left</div>
+                        </div>
+                    </div>
                         <div class="h-4 w-full bg-slate-800 rounded-full overflow-hidden border border-white/5">
                             <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all duration-1000 relative" style="width: ${velMain.percent}%">
                                 <div class="absolute inset-0 bg-white/20 w-full -translate-x-full animate-[shimmer_2s_infinite]"></div>
