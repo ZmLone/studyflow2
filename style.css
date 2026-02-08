@@ -757,8 +757,12 @@ button {
 }
 
 /* 4. Text/Hint Changes */
+/* 4. Text/Hint Changes - Hides text when lamp is on */
 #auth-modal.lights-on #lamp-hint {
     opacity: 0;
+    animation: none; /* Stops the pulse so it stays hidden */
+    pointer-events: none; /* Prevents clicking invisible text */
+    transform: translateY(10px); /* Slight drop effect as it fades */
 }
 
 /* 5. Login Card - Adapt to Light Mode */
