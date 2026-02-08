@@ -4595,3 +4595,37 @@ window.renderPointsAnalytics = function() {
 
     if(window.lucide) lucide.createIcons({ root: container });
 };
+// --- NEW LAMP LOGIC ---
+window.toggleLamp = function() {
+    const modal = document.getElementById('auth-modal');
+    const chain = document.getElementById('pull-chain-trigger');
+    const bulb = document.getElementById('lamp-bulb');
+    
+    // 1. Animate Chain (Visual Feedback)
+    chain.classList.remove('pull-anim');
+    void chain.offsetWidth; // Trigger reflow to restart animation
+    chain.classList.add('pull-anim');
+
+    // 2. Play Sound
+    // Simple click sound
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
+    audio.volume = 0.5;
+    audio.play().catch(e => console.log("Audio play failed (interaction needed)"));
+
+    // 3. Toggle Light State (Delay slightly for physics feel)
+    setTimeout(() => {
+        modal.classList.toggle('lights-on');
+        
+        // Haptic feedback for mobile
+        if (navigator.vibrate) navigator.vibrate(15);
+    }, 200);
+};
+
+// Ensure modal starts hidden/dark correctly on load
+document.addEventListener('DOMContentLoaded', () => {
+    // If not logged in, show auth modal in dark mode
+    if (!currentUser) {
+        document.getElementById('auth-modal').classList.remove('hidden');
+        document.getElementById('auth-modal').classList.remove('lights-on');
+    }
+});

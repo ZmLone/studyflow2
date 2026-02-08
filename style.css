@@ -708,3 +708,84 @@ button {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+/* ===========================
+   THE DARK ROOM & LAMP ANIMATION
+   =========================== */
+
+/* State: LIGHTS ON */
+#auth-modal.lights-on {
+    background-color: #f8fafc !important; /* Light Slate/White Background */
+}
+
+/* 1. Lamp Structure Changes when Lit */
+#auth-modal.lights-on .lamp-shade {
+    background: linear-gradient(to right, #fbbf24, #f59e0b); /* Amber/Gold Shade */
+    border-bottom-color: #b45309;
+}
+#auth-modal.lights-on .lamp-stand,
+#auth-modal.lights-on .lamp-base {
+    background: #d4d4d8; /* Silver/Metal stand when lit */
+}
+#auth-modal.lights-on #lamp-bulb {
+    background-color: #fff;
+    opacity: 1;
+    box-shadow: 0 0 50px 20px rgba(255, 255, 255, 0.8);
+}
+#auth-modal.lights-on #lamp-glow {
+    background-color: rgba(251, 191, 36, 0.3); /* The warm glow on the wall */
+    width: 600px;
+    height: 600px;
+    opacity: 1;
+}
+
+/* 2. Chain Physics Animation */
+.pull-anim {
+    animation: chainPull 0.4s ease-in-out;
+}
+
+@keyframes chainPull {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(20px); }
+    100% { transform: translateY(0); }
+}
+
+/* 3. Panel Reveal Animation */
+#auth-modal.lights-on #login-panel {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    pointer-events: auto;
+}
+
+/* 4. Text/Hint Changes */
+#auth-modal.lights-on #lamp-hint {
+    opacity: 0;
+}
+
+/* 5. Login Card - Adapt to Light Mode */
+#auth-modal.lights-on #login-panel .backdrop-blur-2xl {
+    background-color: rgba(255, 255, 255, 0.8); /* White glass */
+    border-color: rgba(251, 191, 36, 0.3); /* Gold border */
+    box-shadow: 0 25px 50px -12px rgba(251, 191, 36, 0.25); /* Warm shadow */
+}
+
+#auth-modal.lights-on #login-panel h2 {
+    color: #1e293b; /* Dark text */
+}
+#auth-modal.lights-on #login-panel input {
+    background-color: #f1f5f9; /* Light grey input */
+    color: #0f172a;
+    border-color: #cbd5e1;
+}
+#auth-modal.lights-on #login-panel input:focus {
+    background-color: #fff;
+    border-color: #f59e0b;
+}
+#auth-modal.lights-on #login-panel .text-slate-400 {
+    color: #64748b;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+    #lamp-glow { top: 80px; width: 200px; height: 200px; }
+    #login-panel { position: relative; margin-top: -40px; }
+}
